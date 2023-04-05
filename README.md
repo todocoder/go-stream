@@ -1,4 +1,4 @@
-# go stream
+# Go-Stream
 
 ## 简介
 &emsp;&emsp;在JAVA中，涉及到对数组、Collection等集合类中的元素进行操作的时候，通常会通过循环的方式进行逐个处理，或者使用Stream的方式进行处理。那么在Go中用的多的是切片，那么这里基于Java的stream的操作习惯用Go语言(
