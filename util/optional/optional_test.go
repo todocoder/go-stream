@@ -52,7 +52,7 @@ func TestOptional_Get(t *testing.T) {
 		t.Log("empty")
 	}
 	a = Of[string]("1")
-	got := a.Get()
+	got, _ := a.Get()
 	if !reflect.DeepEqual(got, "1") {
 		t.Errorf("Get() got = %v, want %v", got, "1")
 	}
@@ -63,7 +63,7 @@ func TestOptional_Map(t *testing.T) {
 	o := Of[testItem](item).Map(func(item testItem) any {
 		return item.value
 	})
-	value := o.Get()
+	value, _ := o.Get()
 	if v, ok := value.(string); ok {
 		t.Logf("got = %v", *o.value)
 	} else {
@@ -76,7 +76,7 @@ func TestOptional_FlatMap(t *testing.T) {
 	o := Of[testItem](item).FlatMap(func(item testItem) *Optional[any] {
 		return Of[any](item.value)
 	})
-	value := o.Get()
+	value, _ := o.Get()
 	if v, ok := value.(string); ok {
 		t.Logf("got = %v", *o.value)
 	} else {

@@ -41,11 +41,11 @@ func OfNullable[T any](value *T) *Optional[T] {
 	return newOptional(value)
 }
 
-func (o *Optional[T]) Get() T {
+func (o *Optional[T]) Get() (T, bool) {
 	if o.value == nil {
-		return *new(T)
+		return *new(T), false
 	}
-	return *o.value
+	return *o.value, true
 }
 
 func (o *Optional[T]) IsPresent() bool {

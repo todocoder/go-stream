@@ -1,37 +1,41 @@
 package collectors
 
-func ToSlice[T any]() Collector[T, T, any] {
-	return &DefaultCollector[T, T, any]{
+import "github.com/zerune/go-core/util/function"
+
+func ToSlice[T any]() Collector[T, any, any] {
+	return &DefaultCollector[T, any, any]{
 		supplier: func() any {
-			temp := make([]T, 0)
-			return temp
+			return make([]T, 0)
 		},
-		accumulator: func(t T, ts any) any {
-			ts = append(ts.([]T), t)
-			return ts
+		accumulator: func(container any, u T) any {
+			container = append(container.([]T), u)
+			return container
 		},
 		function: func(t any) any {
 			return t
 		},
 	}
 }
-func ToMap[T any](keyMapper func(T) any, valueMapper func(T) any, opts ...func(oldV, newV any) any) Collector[T, T, any] {
-	return &DefaultCollector[T, T, any]{
-		supplier: func() any {
-			temp := make(map[any]any, 0)
-			return temp
-		},
-		accumulator: func(t T, ts any) any {
-			key := keyMapper(t)
-			value := valueMapper(t)
 
-			for _, opt := range opts {
-				value = MapMerge(key, value, ts.(map[any]any), opt)
-				(ts.(map[any]any))[key] = value
-				return ts
+func ToMap[T any](
+	keyMapper function.Function[T, any], valueMapper function.Function[T, any],
+	mergeFunction ...function.BinaryOperator[any],
+) Collector[T, any, any] {
+	return &DefaultCollector[T, any, any]{
+		supplier: func() any {
+			return make(map[any]any, 0)
+		},
+		accumulator: func(container any, u T) any {
+			key := keyMapper(u)
+			value := valueMapper(u)
+			c := container.(map[any]any)
+			for _, opt := range mergeFunction {
+				value = mapMerge(key, value, c, opt)
+				c[key] = value
+				return c
 			}
-			(ts.(map[any]any))[key] = value
-			return ts
+			c[key] = value
+			return c
 		},
 		function: func(t any) any {
 			return t
@@ -39,20 +43,32 @@ func ToMap[T any](keyMapper func(T) any, valueMapper func(T) any, opts ...func(o
 	}
 }
 
-func GroupingBy[T any](keyMapper func(T) any, valueMapper func(T) any) Collector[T, T, any] {
-	return &DefaultCollector[T, T, any]{
+func GroupingBy[T any](keyMapper function.Function[T, any], valueMapper function.Function[T, any]) Collector[T, any, any] {
+	return &DefaultCollector[T, any, any]{
 		supplier: func() any {
 			temp := make(map[any][]any)
 			return temp
 		},
-		accumulator: func(t T, ts any) any {
-			key := keyMapper(t)
-			value := valueMapper(t)
-			(ts.(map[any][]any))[key] = append((ts.(map[any][]any))[key], value)
-			return ts
+		accumulator: func(container any, u T) any {
+			key := keyMapper(u)
+			value := valueMapper(u)
+			c := container.(map[any][]any)
+			c[key] = append(c[key], value)
+			return c
 		},
 		function: func(t any) any {
 			return t
 		},
 	}
+}
+
+func mapMerge(key any, value any, container map[any]any, mergeFunction function.BinaryOperator[any]) any {
+	oldV := container[key]
+	var newV any
+	if oldV == nil || mergeFunction == nil {
+		newV = value
+	} else {
+		newV = mergeFunction(oldV, value)
+	}
+	return newV
 }

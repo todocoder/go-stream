@@ -2,9 +2,10 @@ package stream
 
 import (
 	"fmt"
-	"github.com/todocoder/go-stream/collectors"
 	"strings"
 	"testing"
+
+	"github.com/zerune/go-core/collectors"
 )
 
 type TestItem struct {
@@ -14,7 +15,7 @@ type TestItem struct {
 
 func TestFlatMap2(t *testing.T) {
 	// 把两个字符串["wo shi todocoder","ha ha ha"] 转为 ["wo","shi","todocoder","ha","ha","ha"]
-	res := Of([]string{"wo shi todocoder", "ha ha ha"}...).FlatMap(func(s string) Stream[any] {
+	res := Of([]string{"wo shi todocoder", "ha ha ha"}...).FlatMap(func(s string) *Stream[any] {
 		return OfFrom(func(source chan<- any) {
 			for _, str := range strings.Split(s, " ") {
 				source <- str
@@ -200,9 +201,9 @@ func TestSorted(t *testing.T) {
 		TestItem{itemNum: 1, itemValue: "item1"},
 		TestItem{itemNum: 2, itemValue: "item2"},
 		TestItem{itemNum: 3, itemValue: "item3"},
-	).Sorted(func(a, b TestItem) bool {
+	).Sorted(func(a, b TestItem) int {
 		// 降序
-		return a.itemNum > b.itemNum
+		return a.itemNum - b.itemNum
 	}).ToSlice()
 	fmt.Println(resSorted)
 }
@@ -229,6 +230,7 @@ func TestDistinct(t *testing.T) {
 	}).ToSlice()
 	fmt.Println(resReverse)
 }
+
 func TestSkip(t *testing.T) {
 	resSkip := Of(
 		TestItem{itemNum: 1, itemValue: "item1"},
@@ -247,7 +249,7 @@ func TestLimit(t *testing.T) {
 		TestItem{itemNum: 3, itemValue: "item3"},
 		TestItem{itemNum: 3, itemValue: "item4"},
 		TestItem{itemNum: 4, itemValue: "item4"},
-	).Skip(1).Limit(7).ToSlice()
+	).Skip(1).Limit(3).ToSlice()
 	fmt.Println(resLimit)
 }
 
@@ -403,7 +405,7 @@ func TestFlatMap(t *testing.T) {
 			return true
 		}
 		return false
-	}).FlatMap(func(item TestItem) Stream[any] {
+	}).FlatMap(func(item TestItem) *Stream[any] {
 		return Of[any](
 			TestItem{itemNum: item.itemNum * 10, itemValue: fmt.Sprintf("%s+%d", item.itemValue, item.itemNum)},
 			TestItem{itemNum: item.itemNum * 20, itemValue: fmt.Sprintf("%s+%d", item.itemValue, item.itemNum)},

@@ -105,4 +105,5 @@ func (g *LimitedGroup) RunSafe(fn func()) {
 // Wait waits all running functions to be done.
 func (g *LimitedGroup) Wait() {
 	g.waitGroup.Wait()
+	close(g.pool)
 }
