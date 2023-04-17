@@ -4,12 +4,12 @@ import (
 	"runtime"
 	"sort"
 
-	"github.com/zerune/go-core/collectors"
 	"github.com/zerune/go-core/lang"
 	"github.com/zerune/go-core/routine"
 	"github.com/zerune/go-core/routine/channel"
 	"github.com/zerune/go-core/util/function"
 	"github.com/zerune/go-core/util/optional"
+	"github.com/zerune/go-core/util/stream/collectors"
 )
 
 var (

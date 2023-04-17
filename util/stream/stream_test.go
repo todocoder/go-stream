@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zerune/go-core/collectors"
+	"github.com/zerune/go-core/util/stream/collectors"
 )
 
 type TestItem struct {
@@ -281,7 +281,7 @@ func TestToSlice(t *testing.T) {
 			return true
 		}
 		return false
-	}).Collect(collectors.ToSlice[TestItem]())
+	}).Collect(collectors.ToSlice[TestItem]()).([]TestItem)
 	fmt.Println(res)
 	//sum := func(i1, i2 int) int { return i1 + i2 }
 }

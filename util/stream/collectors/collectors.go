@@ -1,6 +1,8 @@
 package collectors
 
-import "github.com/zerune/go-core/util/function"
+import (
+	"github.com/zerune/go-core/util/function"
+)
 
 func ToSlice[T any]() Collector[T, any, any] {
 	return &DefaultCollector[T, any, any]{
