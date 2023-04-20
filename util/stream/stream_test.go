@@ -391,7 +391,31 @@ func TestMap(t *testing.T) {
 			itemNum:   item.itemNum,
 			itemValue: item.itemValue,
 		}
-	}).Collect(collectors.ToSlice[any]())
+	}).Collect(collectors.ToSlice[any]()).([]any)
+	for _, r := range res {
+		fmt.Println(r)
+	}
+}
+
+func TestMapToInt(t *testing.T) {
+	res := Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+		TestItem{itemNum: 4, itemValue: "item4"},
+		TestItem{itemNum: 5, itemValue: "item5"},
+		TestItem{itemNum: 6, itemValue: "item6"},
+		TestItem{itemNum: 7, itemValue: "item7"},
+		TestItem{itemNum: 8, itemValue: "item8"},
+		TestItem{itemNum: 9, itemValue: "item9"},
+	).Filter(func(item TestItem) bool {
+		if item.itemNum != 1 {
+			return true
+		}
+		return false
+	}).MapToInt(func(item TestItem) int {
+		return item.itemNum
+	}).Collect(collectors.ToSlice[int]()).([]int)
 	fmt.Println(res)
 }
 

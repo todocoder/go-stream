@@ -8,8 +8,6 @@ import (
 	"bytes"
 	"runtime"
 	"strconv"
-
-	"github.com/zerune/go-core/errors"
 )
 
 // GoSafe runs the given fn using another goroutine, recovers if fn panics.
@@ -31,7 +29,7 @@ func RoutineId() uint64 {
 
 // RunSafe runs the given fn, recovers if fn panics.
 func RunSafe(fn func()) {
-	defer errors.Recover()
+	defer Recover()
 
 	fn()
 }

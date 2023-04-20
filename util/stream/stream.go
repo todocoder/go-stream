@@ -369,27 +369,35 @@ func (s *Stream[T]) Reduce(accumulator function.BinaryOperator[T]) *optional.Opt
 	return optional.Of(res)
 }
 
-func (s *Stream[T]) Map(fn func(item T) any) *Stream[any] {
-	return Map[T](s, fn)
-}
-
-func (s *Stream[T]) MapToInt(mapper func(T) int64) *Stream[int64] {
+func (s *Stream[T]) Map(mapper function.Function[T, any]) *Stream[any] {
 	return Map[T](s, mapper)
 }
 
-func (s *Stream[T]) MapToDouble(mapper func(T) float64) *Stream[float64] {
+func (s *Stream[T]) MapToInt(mapper function.ToIntFunction[T]) *Stream[int] {
 	return Map[T](s, mapper)
 }
 
-func (s *Stream[T]) FlatMap(mapper func(T) *Stream[any]) *Stream[any] {
+func (s *Stream[T]) MapToLong(mapper function.ToLongFunction[T]) *Stream[int64] {
+	return Map[T](s, mapper)
+}
+
+func (s *Stream[T]) MapToDouble(mapper function.ToDoubleFunction[T]) *Stream[float64] {
+	return Map[T](s, mapper)
+}
+
+func (s *Stream[T]) FlatMap(mapper function.Function[T, *Stream[any]]) *Stream[any] {
 	return FlatMap[T](s, mapper)
 }
 
-func (s *Stream[T]) FlatMapToInt(mapper func(T) *Stream[any]) *Stream[any] {
+func (s *Stream[T]) FlatMapToInt(mapper function.Function[T, *Stream[int]]) *Stream[int] {
 	return FlatMap[T](s, mapper)
 }
 
-func (s *Stream[T]) FlatMapToDouble(mapper func(T) *Stream[float64]) *Stream[float64] {
+func (s *Stream[T]) FlatMapToLong(mapper function.Function[T, *Stream[int64]]) *Stream[int64] {
+	return FlatMap[T](s, mapper)
+}
+
+func (s *Stream[T]) FlatMapToDouble(mapper function.Function[T, *Stream[float64]]) *Stream[float64] {
 	return FlatMap[T](s, mapper)
 }
 
