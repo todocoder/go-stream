@@ -15,7 +15,7 @@ type TestItem struct {
 
 func TestFlatMap2(t *testing.T) {
 	// 把两个字符串["wo shi todocoder","ha ha ha"] 转为 ["wo","shi","todocoder","ha","ha","ha"]
-	res := Of([]string{"wo shi todocoder", "ha ha ha"}...).FlatMap(func(s string) *Stream[any] {
+	res := Of([]string{"wo shi todocoder", "ha ha ha"}...).FlatMap(func(s string) Stream[any] {
 		return OfFrom(func(source chan<- any) {
 			for _, str := range strings.Split(s, " ") {
 				source <- str
@@ -429,7 +429,7 @@ func TestFlatMap(t *testing.T) {
 			return true
 		}
 		return false
-	}).FlatMap(func(item TestItem) *Stream[any] {
+	}).FlatMap(func(item TestItem) Stream[any] {
 		return Of[any](
 			TestItem{itemNum: item.itemNum * 10, itemValue: fmt.Sprintf("%s+%d", item.itemValue, item.itemNum)},
 			TestItem{itemNum: item.itemNum * 20, itemValue: fmt.Sprintf("%s+%d", item.itemValue, item.itemNum)},

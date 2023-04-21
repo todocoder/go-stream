@@ -29,10 +29,10 @@ type testItem struct {
 func TestEmpty(t *testing.T) {
 	type testCase[T any] struct {
 		name string
-		want *Optional[T]
+		want Optional[T]
 	}
 	tests := []testCase[string]{
-		{name: "empty", want: &Optional[string]{}},
+		{name: "empty", want: Optional[string]{}},
 	}
 
 	for _, tt := range tests {
@@ -52,20 +52,30 @@ func TestOptional_Get(t *testing.T) {
 		t.Log("empty")
 	}
 	a = Of[string]("1")
-	got, _ := a.Get()
-	if !reflect.DeepEqual(got, "1") {
+	got := a.Get()
+	if !reflect.DeepEqual(*got, "1") {
 		t.Errorf("Get() got = %v, want %v", got, "1")
+	}
+
+	item := &testItem{id: 1, value: "item1"}
+	op := OfNullable[testItem](item)
+	_ = op
+	item.value = "after of"
+	got2 := OfNullable[testItem](item).Get()
+	got2.value = "changed"
+	if !reflect.DeepEqual(*got2, *item) {
+		t.Errorf("Get() got = %v, want %v", got2, item)
 	}
 }
 
 func TestOptional_Map(t *testing.T) {
 	item := testItem{id: 1, value: "item1"}
-	o := Of[testItem](item).Map(func(item testItem) any {
+	o := Of[testItem](item).Map(func(item *testItem) any {
 		return item.value
 	})
-	value, _ := o.Get()
-	if v, ok := value.(string); ok {
-		t.Logf("got = %v", *o.value)
+	value := o.Get()
+	if v, ok := (*value).(string); ok {
+		t.Logf("got = %v", *value)
 	} else {
 		t.Errorf("got = %v, want %v", v, "item1")
 	}
@@ -73,12 +83,12 @@ func TestOptional_Map(t *testing.T) {
 
 func TestOptional_FlatMap(t *testing.T) {
 	item := testItem{id: 1, value: "item1"}
-	o := Of[testItem](item).FlatMap(func(item testItem) *Optional[any] {
+	o := Of[testItem](item).FlatMap(func(item *testItem) Optional[any] {
 		return Of[any](item.value)
 	})
-	value, _ := o.Get()
+	value := *o.Get()
 	if v, ok := value.(string); ok {
-		t.Logf("got = %v", *o.value)
+		t.Logf("got = %v", value)
 	} else {
 		t.Errorf("got = %v, want %v", v, "item1")
 	}

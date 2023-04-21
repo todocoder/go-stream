@@ -12,10 +12,39 @@ import (
 	"github.com/zerune/go-core/util/stream/collectors"
 )
 
-var (
-	defaultWorkers = 1
-	maxWorkers     = runtime.NumCPU() * 2
-)
+type Stream[T any] interface {
+	Concat(others ...Stream[T]) Stream[T]
+	Count() int64
+	Filter(predicate function.Predicate[T]) Stream[T]
+	Peek(action function.Consumer[*T]) Stream[T]
+	Limit(maxSize int64) Stream[T]
+	Skip(n int64) Stream[T]
+	Distinct(opts ...function.Function[T, any]) Stream[T]
+	Sorted(comparator ...function.Comparator[T]) Stream[T]
+	Reverse() Stream[T]
+	Max(comparator function.Comparator[T]) optional.Optional[T]
+	Min(comparator function.Comparator[T]) optional.Optional[T]
+	ForEach(action function.Consumer[T])
+	AllMatch(predicate function.Predicate[T]) bool
+	AnyMatch(predicate function.Predicate[T]) bool
+	NoneMatch(predicate function.Predicate[T]) bool
+	TakeWhile(predicate function.Predicate[T]) Stream[T]
+	DropWhile(predicate function.Predicate[T]) Stream[T]
+	FindAny() optional.Optional[T]
+	FindFirst() optional.Optional[T]
+	FindLast() optional.Optional[T]
+	Reduce(accumulator function.BinaryOperator[T]) optional.Optional[T]
+	Map(mapper function.Function[T, any]) Stream[any]
+	MapToInt(mapper function.ToIntFunction[T]) Stream[int]
+	MapToLong(mapper function.ToLongFunction[T]) Stream[int64]
+	MapToDouble(mapper function.ToDoubleFunction[T]) Stream[float64]
+	FlatMap(mapper function.Function[T, Stream[any]]) Stream[any]
+	FlatMapToInt(mapper function.Function[T, Stream[int]]) Stream[int]
+	FlatMapToLong(mapper function.Function[T, Stream[int64]]) Stream[int64]
+	FlatMapToDouble(mapper function.Function[T, Stream[float64]]) Stream[float64]
+	ToSlice() []T
+	Collect(collector collectors.Collector[T, any, any]) any
+}
 
 type (
 	rxOptions struct {
@@ -23,15 +52,21 @@ type (
 		workers          int
 	}
 
-	// WalkFunc defines the method to walk through all the elements in a Stream.
-	WalkFunc[T any] func(item T, pipe chan<- T)
-	Stream[T any]   struct {
+	// walkFunc defines the method to walk through all the elements in a Stream.
+	walkFunc[T any] func(item T, pipe chan<- T)
+
+	streamImpl[T any] struct {
 		source     <-chan T
 		isParallel bool
 	}
 )
 
-func (s *Stream[T]) Concat(others ...*Stream[T]) *Stream[T] {
+var (
+	defaultWorkers = 1
+	maxWorkers     = runtime.NumCPU() * 2
+)
+
+func (s *streamImpl[T]) Concat(others ...Stream[T]) Stream[T] {
 	source := make(chan T)
 	go func() {
 		if s.isParallel {
@@ -46,9 +81,9 @@ func (s *Stream[T]) Concat(others ...*Stream[T]) *Stream[T] {
 			group.Run(
 				func() {
 					for _, each := range others {
-						for item := range each.source {
+						each.ForEach(func(item T) {
 							source <- item
-						}
+						})
 					}
 				},
 			)
@@ -58,9 +93,9 @@ func (s *Stream[T]) Concat(others ...*Stream[T]) *Stream[T] {
 				source <- item
 			}
 			for _, each := range others {
-				for item := range each.source {
+				each.ForEach(func(item T) {
 					source <- item
-				}
+				})
 			}
 		}
 		close(source)
@@ -68,14 +103,14 @@ func (s *Stream[T]) Concat(others ...*Stream[T]) *Stream[T] {
 	return newRangeStream(source, s.isParallel)
 }
 
-func (s *Stream[T]) Count() (count int) {
+func (s *streamImpl[T]) Count() (count int64) {
 	for range s.source {
 		count++
 	}
 	return
 }
 
-func (s *Stream[T]) Filter(predicate function.Predicate[T]) *Stream[T] {
+func (s *streamImpl[T]) Filter(predicate function.Predicate[T]) Stream[T] {
 	return s.walk(func(item T, pipe chan<- T) {
 		if predicate(item) {
 			pipe <- item
@@ -83,14 +118,14 @@ func (s *Stream[T]) Filter(predicate function.Predicate[T]) *Stream[T] {
 	})
 }
 
-func (s *Stream[T]) Peek(action function.Consumer[*T]) *Stream[T] {
+func (s *streamImpl[T]) Peek(action function.Consumer[*T]) Stream[T] {
 	return s.walk(func(item T, pipe chan<- T) {
 		action(&item)
 		pipe <- item
 	})
 }
 
-func (s *Stream[T]) Limit(maxSize int64) *Stream[T] {
+func (s *streamImpl[T]) Limit(maxSize int64) Stream[T] {
 	if maxSize < 0 {
 		maxSize = 0
 	}
@@ -110,7 +145,7 @@ func (s *Stream[T]) Limit(maxSize int64) *Stream[T] {
 	return newRangeStream(source, s.isParallel)
 }
 
-func (s *Stream[T]) Skip(n int64) *Stream[T] {
+func (s *streamImpl[T]) Skip(n int64) Stream[T] {
 	if n <= 0 {
 		return s
 	}
@@ -130,7 +165,7 @@ func (s *Stream[T]) Skip(n int64) *Stream[T] {
 	return newRangeStream(source, s.isParallel)
 }
 
-func (s *Stream[T]) Distinct(opts ...function.Function[T, any]) *Stream[T] {
+func (s *streamImpl[T]) Distinct(opts ...function.Function[T, any]) Stream[T] {
 	source := make(chan T)
 	routine.GoSafe(func() {
 		defer close(source)
@@ -151,7 +186,7 @@ func (s *Stream[T]) Distinct(opts ...function.Function[T, any]) *Stream[T] {
 	return newRangeStream(source, s.isParallel)
 }
 
-func (s *Stream[T]) Sorted(comparator ...function.Comparator[T]) *Stream[T] {
+func (s *streamImpl[T]) Sorted(comparator ...function.Comparator[T]) Stream[T] {
 	var items []T
 	for item := range s.source {
 		items = append(items, item)
@@ -185,7 +220,7 @@ func (s *Stream[T]) Sorted(comparator ...function.Comparator[T]) *Stream[T] {
 	return Of(items...)
 }
 
-func (s *Stream[T]) Reverse() *Stream[T] {
+func (s *streamImpl[T]) Reverse() Stream[T] {
 	var items []T
 	for item := range s.source {
 		items = append(items, item)
@@ -194,15 +229,15 @@ func (s *Stream[T]) Reverse() *Stream[T] {
 		opp := len(items) - 1 - i
 		items[i], items[opp] = items[opp], items[i]
 	}
-
 	return Of(items...)
 }
 
-func (s *Stream[T]) Max(comparator func(T, T) int) *optional.Optional[T] {
-	max, ok := s.FindFirst().Get()
-	if !ok {
-		return optional.OfNullable[T](nil)
+func (s *streamImpl[T]) Max(comparator function.Comparator[T]) optional.Optional[T] {
+	first := s.FindFirst()
+	if !first.IsPresent() {
+		return optional.Empty[T]()
 	}
+	max := *first.Get()
 	s.ForEach(func(t T) {
 		if comparator(t, max) > 0 {
 			max = t
@@ -211,11 +246,12 @@ func (s *Stream[T]) Max(comparator func(T, T) int) *optional.Optional[T] {
 	return optional.Of(max)
 }
 
-func (s *Stream[T]) Min(comparator func(T, T) int) *optional.Optional[T] {
-	min, ok := s.FindFirst().Get()
-	if !ok {
-		return optional.OfNullable[T](nil)
+func (s *streamImpl[T]) Min(comparator function.Comparator[T]) optional.Optional[T] {
+	first := s.FindFirst()
+	if !first.IsPresent() {
+		return optional.Empty[T]()
 	}
+	min := *first.Get()
 	s.ForEach(func(t T) {
 		if comparator(t, min) < 0 {
 			min = t
@@ -224,7 +260,7 @@ func (s *Stream[T]) Min(comparator func(T, T) int) *optional.Optional[T] {
 	return optional.Of(min)
 }
 
-func (s *Stream[T]) ForEach(action function.Consumer[T]) {
+func (s *streamImpl[T]) ForEach(action function.Consumer[T]) {
 	option := buildOptions(s.isParallel)
 	wg := routine.NewLimitedGroup(option.workers)
 	for item := range s.source {
@@ -240,7 +276,7 @@ func (s *Stream[T]) ForEach(action function.Consumer[T]) {
 }
 
 // AllMatch 返回此流中是否全都满足条件
-func (s *Stream[T]) AllMatch(predicate function.Predicate[T]) bool {
+func (s *streamImpl[T]) AllMatch(predicate function.Predicate[T]) bool {
 	// 非缓冲通道
 	flag := make(chan bool)
 	routine.GoSafe(func() {
@@ -258,7 +294,7 @@ func (s *Stream[T]) AllMatch(predicate function.Predicate[T]) bool {
 }
 
 // AnyMatch 返回此流中是否存在元素满足所提供的条件
-func (s *Stream[T]) AnyMatch(predicate function.Predicate[T]) bool {
+func (s *streamImpl[T]) AnyMatch(predicate function.Predicate[T]) bool {
 	flag := make(chan bool)
 	routine.GoSafe(func() {
 		tempFlag := false
@@ -276,7 +312,7 @@ func (s *Stream[T]) AnyMatch(predicate function.Predicate[T]) bool {
 }
 
 // NoneMatch 返回此流中是否全都不满足条件
-func (s *Stream[T]) NoneMatch(predicate function.Predicate[T]) bool {
+func (s *streamImpl[T]) NoneMatch(predicate function.Predicate[T]) bool {
 	flag := make(chan bool)
 	routine.GoSafe(func() {
 		tempFlag := true
@@ -293,7 +329,7 @@ func (s *Stream[T]) NoneMatch(predicate function.Predicate[T]) bool {
 	return <-flag
 }
 
-func (s *Stream[T]) TakeWhile(predicate function.Predicate[T]) *Stream[T] {
+func (s *streamImpl[T]) TakeWhile(predicate function.Predicate[T]) Stream[T] {
 	source := make(chan T)
 	go func() {
 		for item := range s.source {
@@ -310,7 +346,7 @@ func (s *Stream[T]) TakeWhile(predicate function.Predicate[T]) *Stream[T] {
 	return newRangeStream(source, s.isParallel)
 }
 
-func (s *Stream[T]) DropWhile(predicate function.Predicate[T]) *Stream[T] {
+func (s *streamImpl[T]) DropWhile(predicate function.Predicate[T]) Stream[T] {
 	source := make(chan T)
 	go func() {
 		drop := true
@@ -330,28 +366,28 @@ func (s *Stream[T]) DropWhile(predicate function.Predicate[T]) *Stream[T] {
 	return newRangeStream(source, s.isParallel)
 }
 
-func (s *Stream[T]) FindAny() *optional.Optional[T] {
+func (s *streamImpl[T]) FindAny() optional.Optional[T] {
 	return s.FindFirst()
 }
 
-func (s *Stream[T]) FindFirst() *optional.Optional[T] {
+func (s *streamImpl[T]) FindFirst() optional.Optional[T] {
 	for item := range s.source {
 		go channel.Drain(s.source)
 		return optional.Of(item)
 	}
-	return optional.OfNullable[T](nil)
+	return optional.Empty[T]()
 }
 
-func (s *Stream[T]) FindLast() *optional.Optional[T] {
-	tempStream := s.Reverse()
+func (s *streamImpl[T]) FindLast() optional.Optional[T] {
+	tempStream := s.Reverse().(*streamImpl[T])
 	for item := range tempStream.source {
 		go channel.Drain(tempStream.source)
 		return optional.Of(item)
 	}
-	return optional.OfNullable[T](nil)
+	return optional.Empty[T]()
 }
 
-func (s *Stream[T]) Reduce(accumulator function.BinaryOperator[T]) *optional.Optional[T] {
+func (s *streamImpl[T]) Reduce(accumulator function.BinaryOperator[T]) optional.Optional[T] {
 	var cnt = 0
 	var res T
 	for item := range s.source {
@@ -364,44 +400,44 @@ func (s *Stream[T]) Reduce(accumulator function.BinaryOperator[T]) *optional.Opt
 		res = accumulator(res, item)
 	}
 	if cnt == 0 {
-		return optional.OfNullable[T](nil)
+		return optional.Empty[T]()
 	}
 	return optional.Of(res)
 }
 
-func (s *Stream[T]) Map(mapper function.Function[T, any]) *Stream[any] {
+func (s *streamImpl[T]) Map(mapper function.Function[T, any]) Stream[any] {
 	return Map[T](s, mapper)
 }
 
-func (s *Stream[T]) MapToInt(mapper function.ToIntFunction[T]) *Stream[int] {
+func (s *streamImpl[T]) MapToInt(mapper function.ToIntFunction[T]) Stream[int] {
 	return Map[T](s, mapper)
 }
 
-func (s *Stream[T]) MapToLong(mapper function.ToLongFunction[T]) *Stream[int64] {
+func (s *streamImpl[T]) MapToLong(mapper function.ToLongFunction[T]) Stream[int64] {
 	return Map[T](s, mapper)
 }
 
-func (s *Stream[T]) MapToDouble(mapper function.ToDoubleFunction[T]) *Stream[float64] {
+func (s *streamImpl[T]) MapToDouble(mapper function.ToDoubleFunction[T]) Stream[float64] {
 	return Map[T](s, mapper)
 }
 
-func (s *Stream[T]) FlatMap(mapper function.Function[T, *Stream[any]]) *Stream[any] {
+func (s *streamImpl[T]) FlatMap(mapper function.Function[T, Stream[any]]) Stream[any] {
 	return FlatMap[T](s, mapper)
 }
 
-func (s *Stream[T]) FlatMapToInt(mapper function.Function[T, *Stream[int]]) *Stream[int] {
+func (s *streamImpl[T]) FlatMapToInt(mapper function.Function[T, Stream[int]]) Stream[int] {
 	return FlatMap[T](s, mapper)
 }
 
-func (s *Stream[T]) FlatMapToLong(mapper function.Function[T, *Stream[int64]]) *Stream[int64] {
+func (s *streamImpl[T]) FlatMapToLong(mapper function.Function[T, Stream[int64]]) Stream[int64] {
 	return FlatMap[T](s, mapper)
 }
 
-func (s *Stream[T]) FlatMapToDouble(mapper function.Function[T, *Stream[float64]]) *Stream[float64] {
+func (s *streamImpl[T]) FlatMapToDouble(mapper function.Function[T, Stream[float64]]) Stream[float64] {
 	return FlatMap[T](s, mapper)
 }
 
-func (s *Stream[T]) ToSlice() []T {
+func (s *streamImpl[T]) ToSlice() []T {
 	r := make([]T, 0)
 	for item := range s.source {
 		r = append(r, item)
@@ -409,7 +445,7 @@ func (s *Stream[T]) ToSlice() []T {
 	return r
 }
 
-func (s *Stream[T]) Collect(collector collectors.Collector[T, any, any]) any {
+func (s *streamImpl[T]) Collect(collector collectors.Collector[T, any, any]) any {
 	container := collector.Supplier()()
 	for item := range s.source {
 		container = collector.Accumulator()(container, item)
@@ -418,7 +454,7 @@ func (s *Stream[T]) Collect(collector collectors.Collector[T, any, any]) any {
 }
 
 // lets the callers handle each item, the caller may write zero, one or more items base on the given item.
-func (s *Stream[T]) walk(fn WalkFunc[T]) *Stream[T] {
+func (s *streamImpl[T]) walk(fn walkFunc[T]) Stream[T] {
 	option := buildOptions(s.isParallel)
 	if option.unlimitedWorkers {
 		wg := routine.NewRoutineGroup()
@@ -428,7 +464,7 @@ func (s *Stream[T]) walk(fn WalkFunc[T]) *Stream[T] {
 	return s.walkFunc(wg, fn, option)
 }
 
-func (s *Stream[T]) walkFunc(wg routine.WaitGroup, fn WalkFunc[T], option *rxOptions) *Stream[T] {
+func (s *streamImpl[T]) walkFunc(wg routine.WaitGroup, fn walkFunc[T], option rxOptions) Stream[T] {
 	pipe := make(chan T, option.workers)
 
 	go func() {
@@ -450,15 +486,15 @@ func (s *Stream[T]) walkFunc(wg routine.WaitGroup, fn WalkFunc[T], option *rxOpt
 	return newRangeStream(pipe, s.isParallel)
 }
 
-func Of[T any](values ...T) *Stream[T] {
+func Of[T any](values ...T) Stream[T] {
 	return newStream(false, values...)
 }
 
-func OfParallel[T any](values ...T) *Stream[T] {
+func OfParallel[T any](values ...T) Stream[T] {
 	return newStream(true, values...)
 }
 
-func OfFrom[T any](generate func(source chan<- T)) *Stream[T] {
+func OfFrom[T any](generate func(source chan<- T)) Stream[T] {
 	source := make(chan T)
 	routine.GoSafe(func() {
 		defer close(source)
@@ -467,7 +503,7 @@ func OfFrom[T any](generate func(source chan<- T)) *Stream[T] {
 	return newRangeStream[T](source, false)
 }
 
-func OfFromParallel[T any](generate func(source chan<- T)) *Stream[T] {
+func OfFromParallel[T any](generate func(source chan<- T)) Stream[T] {
 	source := make(chan T)
 	routine.GoSafe(func() {
 		defer close(source)
@@ -477,11 +513,11 @@ func OfFromParallel[T any](generate func(source chan<- T)) *Stream[T] {
 }
 
 // Concat returns a concatenated Stream.
-func Concat[T any](s *Stream[T], others ...*Stream[T]) *Stream[T] {
+func Concat[T any](s Stream[T], others ...Stream[T]) Stream[T] {
 	return s.Concat(others...)
 }
 
-func newStream[T any](isParallel bool, items ...T) *Stream[T] {
+func newStream[T any](isParallel bool, items ...T) Stream[T] {
 	source := make(chan T, len(items))
 	for _, item := range items {
 		source <- item
@@ -490,16 +526,16 @@ func newStream[T any](isParallel bool, items ...T) *Stream[T] {
 	return newRangeStream[T](source, isParallel)
 }
 
-func newRangeStream[T any](source <-chan T, isParallel bool) *Stream[T] {
-	return &Stream[T]{
+func newRangeStream[T any](source <-chan T, isParallel bool) Stream[T] {
+	return &streamImpl[T]{
 		source:     source,
 		isParallel: isParallel,
 	}
 }
 
 // buildOptions returns a rxOptions with given customizations.
-func buildOptions(parallel bool) *rxOptions {
-	options := &rxOptions{
+func buildOptions(parallel bool) rxOptions {
+	options := rxOptions{
 		workers: defaultWorkers,
 	}
 	if parallel {
