@@ -26,11 +26,11 @@ type RuntimeError struct {
 	message string
 }
 
-func NewRuntimeError(message string) *RuntimeError {
-	return &RuntimeError{message: message}
+func NewRuntimeError(message string) RuntimeError {
+	return RuntimeError{message: message}
 }
 
-func (e *RuntimeError) Error() string {
+func (e RuntimeError) Error() string {
 	return e.message
 }
 
@@ -39,8 +39,8 @@ type IllegalArgumentError struct {
 	RuntimeError
 }
 
-func NewIllegalArgumentError(message string) *IllegalArgumentError {
-	return &IllegalArgumentError{RuntimeError: *NewRuntimeError(message)}
+func NewIllegalArgumentError(message string) IllegalArgumentError {
+	return IllegalArgumentError{RuntimeError: NewRuntimeError(message)}
 }
 
 // UnsupportedOperationError Thrown to indicate that the requested operation is not supported.
@@ -48,6 +48,6 @@ type UnsupportedOperationError struct {
 	RuntimeError
 }
 
-func NewUnsupportedOperationError(message string) *UnsupportedOperationError {
-	return &UnsupportedOperationError{RuntimeError: *NewRuntimeError(message)}
+func NewUnsupportedOperationError(message string) UnsupportedOperationError {
+	return UnsupportedOperationError{RuntimeError: NewRuntimeError(message)}
 }

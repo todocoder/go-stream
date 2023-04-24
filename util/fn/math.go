@@ -14,35 +14,19 @@
  * limitations under the License.
  */
 
-package uuid
+package fn
 
-import (
-	"io"
-
-	"github.com/google/uuid"
-)
-
-func New() uuid.UUID {
-	return uuid.New()
+func If[T any](condition bool, x T, y T) T {
+	if condition {
+		return x
+	}
+	return y
 }
 
-// NewString returns an uuid string.
-func NewString() string {
-	return uuid.NewString()
+func Max[T int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | uintptr](x, y T) T {
+	return If[T](x >= y, x, y)
 }
 
-func NewRandom() (uuid.UUID, error) {
-	return uuid.NewRandom()
-}
-
-func NewRandomFromReader(r io.Reader) (uuid.UUID, error) {
-	return uuid.NewRandomFromReader(r)
-}
-
-func ParseBytes(b []byte) (uuid.UUID, error) {
-	return uuid.ParseBytes(b)
-}
-
-func Parse(s string) (uuid.UUID, error) {
-	return uuid.Parse(s)
+func Min[T int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | uintptr](x, y T) T {
+	return If[T](x <= y, x, y)
 }
