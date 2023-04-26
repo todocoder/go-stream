@@ -1,3 +1,6 @@
+/**
+* See java: stream
+ */
 package collectors
 
 type Supplier[T any] func() T

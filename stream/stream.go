@@ -1,3 +1,6 @@
+/**
+* See: zeromicro/go-zero/core/stream
+ */
 package stream
 
 import (

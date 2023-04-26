@@ -21,6 +21,7 @@ func TestFlatMap2(t *testing.T) {
 			}
 		})
 	}).Collect(collectors.ToSlice[any]())
+
 	fmt.Println(res)
 }
 
