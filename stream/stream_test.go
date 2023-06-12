@@ -518,7 +518,7 @@ func TestToMap11(t *testing.T) {
 	fmt.Println(resGroup)
 }
 
-func TestToMapOpt11(t *testing.T) {
+func TestToMapOpt1(t *testing.T) {
 	res := Of(
 		TestItem{itemNum: 1, itemValue: "item1"},
 		TestItem{itemNum: 2, itemValue: "item2"},
