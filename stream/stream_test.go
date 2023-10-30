@@ -1,6 +1,7 @@
 package stream
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/todocoder/go-stream/collectors"
 	"strings"
@@ -10,6 +11,10 @@ import (
 type TestItem struct {
 	itemNum   int
 	itemValue string
+}
+type TestItemS struct {
+	itemNum   int    `json:"itemNum"`
+	itemValue string `json:"itemValue"`
 }
 
 func TestFlatMap2(t *testing.T) {
@@ -303,6 +308,32 @@ func TestToMap(t *testing.T) {
 		return item
 	}))
 	fmt.Println(res)
+}
+
+func TestToMapS(t *testing.T) {
+	res := Of(
+		TestItemS{itemNum: 1, itemValue: "item1"},
+		TestItemS{itemNum: 2, itemValue: "item2"},
+		TestItemS{itemNum: 3, itemValue: "item3"},
+		TestItemS{itemNum: 4, itemValue: "item4"},
+		TestItemS{itemNum: 4, itemValue: "item5"},
+	).Filter(func(item TestItemS) bool {
+		if item.itemNum != 1 {
+			return true
+		}
+		return false
+	}).Collect(collectors.ToMapS[TestItemS](func(t TestItemS) string {
+		return t.itemValue
+	}, func(item TestItemS) any {
+		tempR := make(map[string]interface{})
+		tempR["date"] = item.itemNum
+		tempR["type"] = item.itemValue
+		return tempR
+	}))
+	v, k := json.Marshal(res)
+
+	fmt.Println(v)
+	fmt.Println(k)
 }
 
 func TestToMapOpt(t *testing.T) {
