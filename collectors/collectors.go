@@ -50,7 +50,7 @@ func ToMapS[T any](keyMapper func(T) string, valueMapper func(T) any, opts ...fu
 			value := valueMapper(t)
 
 			for _, opt := range opts {
-				value = MapMerge(key, value, ts.(map[any]any), opt)
+				value = MapMergeS(key, value, ts.(map[string]any), opt)
 				(ts.(map[string]any))[key] = value
 				return ts
 			}

@@ -316,19 +316,17 @@ func TestToMapS(t *testing.T) {
 		TestItemS{itemNum: 2, itemValue: "item2"},
 		TestItemS{itemNum: 3, itemValue: "item3"},
 		TestItemS{itemNum: 4, itemValue: "item4"},
+		TestItemS{itemNum: 4, itemValue: "item4"},
 		TestItemS{itemNum: 4, itemValue: "item5"},
-	).Filter(func(item TestItemS) bool {
-		if item.itemNum != 1 {
-			return true
-		}
-		return false
-	}).Collect(collectors.ToMapS[TestItemS](func(t TestItemS) string {
+	).Collect(collectors.ToMapS[TestItemS](func(t TestItemS) string {
 		return t.itemValue
 	}, func(item TestItemS) any {
 		tempR := make(map[string]interface{})
 		tempR["date"] = item.itemNum
 		tempR["type"] = item.itemValue
 		return tempR
+	}, func(oldV, newV any) any {
+		return oldV
 	}))
 	v, k := json.Marshal(res)
 

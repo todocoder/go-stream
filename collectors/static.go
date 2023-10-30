@@ -43,3 +43,14 @@ func MapMerge(key any, value any, old map[any]any, opt func(any, any) any) any {
 	}
 	return newV
 }
+
+func MapMergeS(key string, value any, old map[string]any, opt func(any, any) any) any {
+	oldV := old[key]
+	var newV any
+	if oldV == nil || opt == nil {
+		newV = value
+	} else {
+		newV = opt(oldV, value)
+	}
+	return newV
+}
