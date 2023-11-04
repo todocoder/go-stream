@@ -201,6 +201,34 @@ func TestMaxMin(t *testing.T) {
 	fmt.Println(resTemp.Get())
 }
 
+func TestToAverage(t *testing.T) {
+	resInt := Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+	).MapToInt(func(item TestItem) int {
+		return item.itemNum
+	}).SumIntStatistics()
+	fmt.Println(resInt.GetSum())
+	fmt.Println(resInt.GetCount())
+	fmt.Println(resInt.GetMin())
+	fmt.Println(resInt.GetMax())
+	fmt.Println(resInt.GetAverage())
+
+	resFloat := Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+	).MapToFloat64(func(item TestItem) float64 {
+		return float64(item.itemNum)
+	}).SumIntStatistics()
+	fmt.Println(resFloat.GetSum())
+	fmt.Println(resFloat.GetCount())
+	fmt.Println(resFloat.GetMin())
+	fmt.Println(resFloat.GetMax())
+	fmt.Println(resFloat.GetAverage())
+}
+
 func TestSorted(t *testing.T) {
 	resSorted := Of(
 		TestItem{itemNum: 1, itemValue: "item1"},

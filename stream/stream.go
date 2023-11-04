@@ -1,11 +1,10 @@
-/**
-* See: zeromicro/go-zero/core/stream
- */
+// See: zeromicro/go-zero/core/stream
 package stream
 
 import (
 	"fmt"
 	"github.com/todocoder/go-stream/collectors"
+	"github.com/todocoder/go-stream/utils"
 	"runtime"
 	"sort"
 	"sync"
@@ -197,6 +196,174 @@ func (s Stream[T]) Min(comparator func(T, T) int) Optional[T] {
 	return Optional[T]{v: &min}
 }
 
+type SumIntStatistics[T int | int32 | int64] struct {
+	Count   int64
+	Sum     int64
+	Max     T
+	Min     T
+	Average float64
+}
+
+func (s SumIntStatistics[T]) GetCount() int64 {
+	return s.Count
+}
+func (s SumIntStatistics[T]) GetSum() int64 {
+	return s.Sum
+}
+func (s SumIntStatistics[T]) GetMax() T {
+	return s.Max
+}
+func (s SumIntStatistics[T]) GetMin() T {
+	return s.Min
+}
+func (s SumIntStatistics[T]) GetAverage() float64 {
+	return s.Average
+}
+
+func (s Stream[T]) SumIntStatistics() SumIntStatistics[int] {
+	var cnt = 0
+	var sum int64
+	var max int
+	var min int
+	for item := range s.source {
+		i := utils.ToAny[int](item)
+		if cnt == 0 {
+			min = i
+		}
+		cnt++
+		sum = sum + int64(i)
+		max = utils.If(max > i, max, i)
+		min = utils.If(min < i, min, i)
+	}
+	return SumIntStatistics[int]{
+		Count:   int64(cnt),
+		Sum:     sum,
+		Max:     max,
+		Min:     min,
+		Average: utils.If(cnt > 0, float64(sum)/float64(cnt), 0),
+	}
+}
+
+func (s Stream[T]) SumInt32Statistics() SumIntStatistics[int32] {
+	var cnt = 0
+	var sum int64
+	var max int32
+	var min int32
+	for item := range s.source {
+		i := utils.ToAny[int32](item)
+		if cnt == 0 {
+			min = i
+		}
+		cnt++
+		sum = sum + int64(i)
+		max = utils.If(max > i, max, i)
+		min = utils.If(min < i, min, i)
+	}
+	return SumIntStatistics[int32]{
+		Count:   int64(cnt),
+		Sum:     sum,
+		Max:     max,
+		Min:     min,
+		Average: utils.If(cnt > 0, float64(sum)/float64(cnt), 0),
+	}
+}
+
+func (s Stream[T]) SumInt64Statistics() SumIntStatistics[int64] {
+	var cnt = 0
+	var sum int64
+	var max int64
+	var min int64
+	for item := range s.source {
+		i := utils.ToAny[int64](item)
+		if cnt == 0 {
+			min = i
+		}
+		cnt++
+		sum = sum + int64(i)
+		max = utils.If(max > i, max, i)
+		min = utils.If(min < i, min, i)
+	}
+	return SumIntStatistics[int64]{
+		Count:   int64(cnt),
+		Sum:     sum,
+		Max:     max,
+		Min:     min,
+		Average: utils.If(cnt > 0, float64(sum)/float64(cnt), 0),
+	}
+}
+
+type SumFloatStatistics[T float32 | float64] struct {
+	Count   int64
+	Sum     float64
+	Max     T
+	Min     T
+	Average float64
+}
+
+func (s SumFloatStatistics[T]) GetCount() int64 {
+	return s.Count
+}
+func (s SumFloatStatistics[T]) GetSum() float64 {
+	return s.Sum
+}
+func (s SumFloatStatistics[T]) GetMax() T {
+	return s.Max
+}
+func (s SumFloatStatistics[T]) GetMin() T {
+	return s.Min
+}
+func (s SumFloatStatistics[T]) GetAverage() float64 {
+	return s.Average
+}
+
+func (s Stream[T]) SumFloatStatistics() SumFloatStatistics[float32] {
+	var cnt = 0
+	var sum float64
+	var max float32
+	var min float32
+	for item := range s.source {
+		i := utils.ToAny[float32](item)
+		if cnt == 0 {
+			min = i
+		}
+		cnt++
+		sum = sum + float64(i)
+		max = utils.If(max > i, max, i)
+		min = utils.If(min < i, min, i)
+	}
+	return SumFloatStatistics[float32]{
+		Count:   int64(cnt),
+		Sum:     sum,
+		Max:     max,
+		Min:     min,
+		Average: utils.If(cnt > 0, sum/float64(cnt), 0),
+	}
+}
+
+func (s Stream[T]) SumFloat64Statistics() SumFloatStatistics[float64] {
+	var cnt = 0
+	var sum float64
+	var max float64
+	var min float64
+	for item := range s.source {
+		i := utils.ToAny[float64](item)
+		if cnt == 0 {
+			min = i
+		}
+		cnt++
+		sum = sum + i
+		max = utils.If(max > i, max, i)
+		min = utils.If(min < i, min, i)
+	}
+	return SumFloatStatistics[float64]{
+		Count:   int64(cnt),
+		Sum:     sum,
+		Max:     max,
+		Min:     min,
+		Average: utils.If(cnt > 0, sum/float64(cnt), 0),
+	}
+}
+
 func (s Stream[T]) ForEach(fn func(item T)) {
 	var workers = 1
 	if s.isParallel {
@@ -355,11 +522,23 @@ func (s Stream[T]) MapToString(mapper func(T) string) Stream[string] {
 	return Map[T](s, mapper)
 }
 
-func (s Stream[T]) MapToInt(mapper func(T) int64) Stream[int64] {
+func (s Stream[T]) MapToInt(mapper func(T) int) Stream[int] {
 	return Map[T](s, mapper)
 }
 
-func (s Stream[T]) MapToDouble(mapper func(T) float64) Stream[float64] {
+func (s Stream[T]) MapToInt32(mapper func(T) int32) Stream[int32] {
+	return Map[T](s, mapper)
+}
+
+func (s Stream[T]) MapToInt64(mapper func(T) int64) Stream[int64] {
+	return Map[T](s, mapper)
+}
+
+func (s Stream[T]) MapToFloat64(mapper func(T) float64) Stream[float64] {
+	return Map[T](s, mapper)
+}
+
+func (s Stream[T]) MapToFloat32(mapper func(T) float32) Stream[float32] {
 	return Map[T](s, mapper)
 }
 
@@ -374,7 +553,16 @@ func (s Stream[T]) FlatMapToString(mapper func(T) Stream[string]) Stream[string]
 func (s Stream[T]) FlatMapToInt(mapper func(T) Stream[int]) Stream[int] {
 	return FlatMap[T](s, mapper)
 }
-func (s Stream[T]) FlatMapToDouble(mapper func(T) Stream[float64]) Stream[float64] {
+func (s Stream[T]) FlatMapToInt32(mapper func(T) Stream[int32]) Stream[int32] {
+	return FlatMap[T](s, mapper)
+}
+func (s Stream[T]) FlatMapToInt64(mapper func(T) Stream[int64]) Stream[int64] {
+	return FlatMap[T](s, mapper)
+}
+func (s Stream[T]) FlatMapToFloat64(mapper func(T) Stream[float64]) Stream[float64] {
+	return FlatMap[T](s, mapper)
+}
+func (s Stream[T]) FlatMapToFloat32(mapper func(T) Stream[float32]) Stream[float32] {
 	return FlatMap[T](s, mapper)
 }
 
