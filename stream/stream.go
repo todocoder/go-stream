@@ -351,6 +351,10 @@ func (s Stream[T]) Map(fn func(item T) any) Stream[any] {
 	return Map[T](s, fn)
 }
 
+func (s Stream[T]) MapToString(mapper func(T) string) Stream[string] {
+	return Map[T](s, mapper)
+}
+
 func (s Stream[T]) MapToInt(mapper func(T) int64) Stream[int64] {
 	return Map[T](s, mapper)
 }
@@ -363,7 +367,11 @@ func (s Stream[T]) FlatMap(mapper func(T) Stream[any]) Stream[any] {
 	return FlatMap[T](s, mapper)
 }
 
-func (s Stream[T]) FlatMapToInt(mapper func(T) Stream[any]) Stream[any] {
+func (s Stream[T]) FlatMapToString(mapper func(T) Stream[string]) Stream[string] {
+	return FlatMap[T](s, mapper)
+}
+
+func (s Stream[T]) FlatMapToInt(mapper func(T) Stream[int]) Stream[int] {
 	return FlatMap[T](s, mapper)
 }
 func (s Stream[T]) FlatMapToDouble(mapper func(T) Stream[float64]) Stream[float64] {
