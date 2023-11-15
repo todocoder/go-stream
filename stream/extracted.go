@@ -22,3 +22,17 @@ func FlatMap[T any, R any](s Stream[T], mapper func(T) Stream[R]) Stream[R] {
 
 	return Of(newEl...)
 }
+
+func GroupingBy[T any, K string | int | int32 | int64, R any](s Stream[T], keyMapper func(T) K, valueMapper func(T) R, opts ...OptFunc[R]) map[K][]R {
+	groups := make(map[K][]R)
+	s.ForEach(func(t T) {
+		key := keyMapper(t)
+		groups[key] = append(groups[key], valueMapper(t))
+	})
+	for _, vs := range groups {
+		for _, opt := range opts {
+			opt(vs)
+		}
+	}
+	return groups
+}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/todocoder/go-stream/collectors"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -593,4 +594,32 @@ func TestToMapOpt1(t *testing.T) {
 		return oldV
 	}))
 	fmt.Println(res)
+}
+
+func TestGroupby(t *testing.T) {
+	res := Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "3tem21"},
+		TestItem{itemNum: 2, itemValue: "2tem22"},
+		TestItem{itemNum: 2, itemValue: "1tem22"},
+		TestItem{itemNum: 2, itemValue: "4tem23"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+	).GroupingByInt(func(t TestItem) int {
+		return t.itemNum
+	})
+	fmt.Println(res)
+	res1 := Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 6, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+	).GroupingByString(func(t TestItem) string {
+		return t.itemValue
+	}, func(t1 []TestItem) {
+		sort.Slice(t1, func(i, j int) bool {
+			return t1[i].itemNum < t1[j].itemNum
+		})
+	})
+	fmt.Println(res1)
 }

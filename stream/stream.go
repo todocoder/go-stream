@@ -19,6 +19,9 @@ type (
 	Optional[T any] struct {
 		v *T
 	}
+
+	// OptFunc 定义操作切片的函数
+	OptFunc[T any] func([]T)
 )
 
 func (o Optional[T]) IsPresent() bool {
@@ -619,6 +622,34 @@ func Range[T any](source <-chan T, isParallel bool) Stream[T] {
 		source:     source,
 		isParallel: isParallel,
 	}
+}
+
+func (s Stream[T]) GroupingByString(groupFunc func(T) string, opts ...OptFunc[T]) map[string][]T {
+	groups := make(map[string][]T)
+	s.ForEach(func(t T) {
+		key := groupFunc(t)
+		groups[key] = append(groups[key], t)
+	})
+	for _, vs := range groups {
+		for _, opt := range opts {
+			opt(vs)
+		}
+	}
+	return groups
+}
+
+func (s Stream[T]) GroupingByInt(groupFunc func(T) int, opts ...OptFunc[T]) map[int][]T {
+	groups := make(map[int][]T)
+	s.ForEach(func(t T) {
+		key := groupFunc(t)
+		groups[key] = append(groups[key], t)
+	})
+	for _, vs := range groups {
+		for _, opt := range opts {
+			opt(vs)
+		}
+	}
+	return groups
 }
 
 // Concat 拼接流
