@@ -1,5 +1,25 @@
 package stream
 
+import "github.com/todocoder/go-stream/collectors"
+
+/*
+Map stream 流 类型转换方法
+
+eg:
+
+res := Map(Of(
+
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+	), func(item TestItem) ToTestItem {
+		return ToTestItem{
+			itemNum:   item.itemNum,
+			itemValue: item.itemValue,
+		}
+	}).ToSlice()
+	fmt.Println(res)
+*/
 func Map[T any, R any](s Stream[T], mapper func(T) R) Stream[R] {
 	mapped := make([]R, 0)
 
@@ -35,4 +55,12 @@ func GroupingBy[T any, K string | int | int32 | int64, R any](s Stream[T], keyMa
 		}
 	}
 	return groups
+}
+
+func Collect[T any, A any, R any](s Stream[T], collector collectors.Collector[T, A, R]) R {
+	temp := collector.Supplier()()
+	for item := range s.source {
+		collector.Accumulator()(temp, item)
+	}
+	return collector.Finisher()(temp)
 }

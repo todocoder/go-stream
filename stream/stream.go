@@ -65,7 +65,7 @@ func (s Stream[T]) Concat(others ...Stream[T]) Stream[T] {
 	}()
 	return Range(source, s.isParallel)
 }
-func (s Stream[T]) Count() (count int) {
+func (s Stream[T]) Count() (count int64) {
 	for range s.source {
 		count++
 	}
@@ -186,7 +186,6 @@ func (s Stream[T]) Max(comparator func(T, T) int) Optional[T] {
 
 func (s Stream[T]) Min(comparator func(T, T) int) Optional[T] {
 
-	//min := s.FindFirst()
 	min, ok := s.FindFirst().Get()
 	if !ok {
 		return Optional[T]{v: nil}
@@ -210,15 +209,19 @@ type SumIntStatistics[T int | int32 | int64] struct {
 func (s SumIntStatistics[T]) GetCount() int64 {
 	return s.Count
 }
+
 func (s SumIntStatistics[T]) GetSum() int64 {
 	return s.Sum
 }
+
 func (s SumIntStatistics[T]) GetMax() T {
 	return s.Max
 }
+
 func (s SumIntStatistics[T]) GetMin() T {
 	return s.Min
 }
+
 func (s SumIntStatistics[T]) GetAverage() float64 {
 	return s.Average
 }
@@ -282,7 +285,7 @@ func (s Stream[T]) SumInt64Statistics() SumIntStatistics[int64] {
 			min = i
 		}
 		cnt++
-		sum = sum + int64(i)
+		sum = sum + i
 		max = utils.If(max > i, max, i)
 		min = utils.If(min < i, min, i)
 	}
@@ -319,7 +322,7 @@ func (s SumFloatStatistics[T]) GetAverage() float64 {
 	return s.Average
 }
 
-func (s Stream[T]) SumFloatStatistics() SumFloatStatistics[float32] {
+func (s Stream[T]) SumFloat32Statistics() SumFloatStatistics[float32] {
 	var cnt = 0
 	var sum float64
 	var max float32
@@ -406,6 +409,7 @@ func (s Stream[T]) walkLimited(fn func(item T, pipe chan<- T)) Stream[T] {
 	}
 	pipe := make(chan T, workers)
 	go func() {
+		defer close(pipe)
 		var wg sync.WaitGroup
 		// 这里是个占位类型
 		pool := make(chan struct{}, workers)
@@ -423,7 +427,6 @@ func (s Stream[T]) walkLimited(fn func(item T, pipe chan<- T)) Stream[T] {
 			})
 		}
 		wg.Wait()
-		close(pipe)
 	}()
 	return Range(pipe, s.isParallel)
 }
@@ -460,7 +463,6 @@ func (s Stream[T]) AnyMatch(predicate func(T) bool) bool {
 		}
 		flag <- tempFlag
 	})
-
 	return <-flag
 }
 
@@ -545,7 +547,7 @@ func (s Stream[T]) MapToFloat32(mapper func(T) float32) Stream[float32] {
 	return Map[T](s, mapper)
 }
 
-func (s Stream[T]) FlatMap(mapper func(T) Stream[any]) Stream[any] {
+func (s Stream[T]) FlatMap(mapper func(T) Stream[T]) Stream[T] {
 	return FlatMap[T](s, mapper)
 }
 
@@ -577,10 +579,60 @@ func (s Stream[T]) ToSlice() []T {
 	return r
 }
 
+func (s Stream[T]) ToMapString(keyMapper func(T) string, valueMapper func(T) T, opts ...func(oldV, newV T) T) map[string]T {
+	res := make(map[string]T, 0)
+	for item := range s.source {
+		key := keyMapper(item)
+		value := valueMapper(item)
+
+		oldV, ok := res[key]
+
+		if !ok || opts == nil || len(opts) < 1 {
+			res[key] = value
+			continue
+		}
+		var newV T
+		for _, opt := range opts {
+			if !ok || opt == nil {
+				newV = value
+			} else {
+				newV = opt(oldV, value)
+			}
+			res[key] = newV
+		}
+	}
+	return res
+}
+
+func (s Stream[T]) ToMapInt(keyMapper func(T) int, valueMapper func(T) T, opts ...func(oldV, newV T) T) map[int]T {
+	res := make(map[int]T, 0)
+	for item := range s.source {
+		key := keyMapper(item)
+		value := valueMapper(item)
+
+		oldV, ok := res[key]
+		if !ok || opts == nil || len(opts) < 1 {
+			res[key] = value
+			continue
+		}
+		var newV T
+		for _, opt := range opts {
+			if !ok || opt == nil {
+				newV = value
+			} else {
+				newV = opt(oldV, value)
+			}
+			res[key] = newV
+		}
+	}
+	return res
+}
+
+// Deprecated: This function is no longer recommended. Please use extracted.Collect() instead.
 func (s Stream[T]) Collect(collector collectors.Collector[T, T, any]) any {
 	temp := collector.Supplier()()
 	for item := range s.source {
-		temp = collector.Accumulator()(item, temp)
+		collector.Accumulator()(item, temp)
 	}
 	return collector.Finisher()(temp)
 }
@@ -593,6 +645,7 @@ func drain[T any](channel <-chan T) {
 func Of[T any](values ...T) Stream[T] {
 	return newStream(false, values...)
 }
+
 func OfParallel[T any](values ...T) Stream[T] {
 	s := newStream(true, values...)
 	return s.Walk(func(item T, pipe chan<- T) {

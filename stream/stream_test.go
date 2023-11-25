@@ -20,13 +20,13 @@ type TestItemS struct {
 
 func TestFlatMap2(t *testing.T) {
 	// 把两个字符串["wo shi todocoder","ha ha ha"] 转为 ["wo","shi","todocoder","ha","ha","ha"]
-	res := Of([]string{"wo shi todocoder", "ha ha ha"}...).FlatMap(func(s string) Stream[any] {
-		return OfFrom(func(source chan<- any) {
+	res := Of([]string{"wo shi todocoder", "ha ha ha"}...).FlatMap(func(s string) Stream[string] {
+		return OfFrom(func(source chan<- string) {
 			for _, str := range strings.Split(s, " ") {
 				source <- str
 			}
 		})
-	}).Collect(collectors.ToSlice[any]())
+	}).ToSlice()
 
 	fmt.Println(res)
 }
@@ -37,7 +37,7 @@ func TestMap2(t *testing.T) {
 			itemNum:   item,
 			itemValue: fmt.Sprintf("item%d", item),
 		}
-	}).Collect(collectors.ToSlice[any]())
+	}).ToSlice()
 	fmt.Println(res)
 }
 
@@ -314,9 +314,8 @@ func TestToSlice(t *testing.T) {
 			return true
 		}
 		return false
-	}).Collect(collectors.ToSlice[TestItem]())
+	}).ToSlice()
 	fmt.Println(res)
-	//sum := func(i1, i2 int) int { return i1 + i2 }
 }
 
 func TestToMap(t *testing.T) {
@@ -331,40 +330,52 @@ func TestToMap(t *testing.T) {
 			return true
 		}
 		return false
-	}).Collect(collectors.ToMap[TestItem](func(t TestItem) any {
+	}).ToMapInt(func(t TestItem) int {
 		return t.itemNum
-	}, func(item TestItem) any {
+	}, func(item TestItem) TestItem {
 		return item
-	}))
+	})
 	fmt.Println(res)
 }
 
-func TestToMapS(t *testing.T) {
-	res := Of(
+func TestToMap1(t *testing.T) {
+	res0 := Collect(Of(
 		TestItemS{itemNum: 1, itemValue: "item1"},
 		TestItemS{itemNum: 2, itemValue: "item2"},
 		TestItemS{itemNum: 3, itemValue: "item3"},
 		TestItemS{itemNum: 4, itemValue: "item4"},
 		TestItemS{itemNum: 4, itemValue: "item4"},
 		TestItemS{itemNum: 4, itemValue: "item5"},
-	).Collect(collectors.ToMapS[TestItemS](func(t TestItemS) string {
+	), collectors.ToMap(func(t TestItemS) string {
 		return t.itemValue
-	}, func(item TestItemS) any {
-		tempR := make(map[string]interface{})
-		tempR["date"] = item.itemNum
-		tempR["type"] = item.itemValue
-		return tempR
-	}, func(oldV, newV any) any {
-		return oldV
+	}, func(item TestItemS) int {
+		return item.itemNum
 	}))
-	v, k := json.Marshal(res)
+	println(res0)
+
+	res1 := Collect(Of(
+		TestItemS{itemNum: 1, itemValue: "item1"},
+		TestItemS{itemNum: 2, itemValue: "item2"},
+		TestItemS{itemNum: 3, itemValue: "item3"},
+		TestItemS{itemNum: 4, itemValue: "item4"},
+		TestItemS{itemNum: 5, itemValue: "item4"},
+		TestItemS{itemNum: 4, itemValue: "item5"},
+	), collectors.ToMap(func(t TestItemS) string {
+		return t.itemValue
+	}, func(item TestItemS) int {
+		return item.itemNum
+	}, func(v1, v2 int) int {
+		return v2
+	}))
+	println(res1)
+	v, k := json.Marshal(res0)
 
 	fmt.Println(v)
 	fmt.Println(k)
 }
 
 func TestToMapOpt(t *testing.T) {
-	res := Of(
+	res := Collect(Of(
 		TestItem{itemNum: 1, itemValue: "item1"},
 		TestItem{itemNum: 2, itemValue: "item2"},
 		TestItem{itemNum: 3, itemValue: "item3"},
@@ -375,18 +386,18 @@ func TestToMapOpt(t *testing.T) {
 			return true
 		}
 		return false
-	}).Collect(collectors.ToMap[TestItem](func(t TestItem) any {
+	}), collectors.ToMap(func(t TestItem) int {
 		return t.itemNum
-	}, func(item TestItem) any {
+	}, func(item TestItem) string {
 		return item.itemValue
-	}, func(oldV, newV any) any {
+	}, func(oldV, newV string) string {
 		return oldV
 	}))
 	fmt.Println(res)
 }
 
 func TestToGroupBy(t *testing.T) {
-	res := Of(
+	res := Collect(Of(
 		TestItem{itemNum: 1, itemValue: "item1"},
 		TestItem{itemNum: 2, itemValue: "item2"},
 		TestItem{itemNum: 3, itemValue: "item3"},
@@ -397,12 +408,65 @@ func TestToGroupBy(t *testing.T) {
 			return true
 		}
 		return false
-	}).Collect(collectors.GroupingBy(func(t TestItem) any {
+	}), collectors.GroupingBy(func(t TestItem) int {
 		return t.itemNum
-	}, func(t TestItem) any {
-		return t
+	}, func(t TestItem) string {
+		return t.itemValue
 	}))
 	fmt.Println(res)
+
+	res1 := Collect(Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item2"},
+		TestItem{itemNum: 5, itemValue: "item2"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 4, itemValue: "item4"},
+		TestItem{itemNum: 0, itemValue: "item4"},
+		TestItem{itemNum: 4, itemValue: "item5"},
+		TestItem{itemNum: 9, itemValue: "item5"},
+	).Filter(func(item TestItem) bool {
+		if item.itemNum != 1 {
+			return true
+		}
+		return false
+	}), collectors.GroupingBy(func(t TestItem) string {
+		return t.itemValue
+	}, func(t TestItem) int {
+		return t.itemNum
+	}, func(t1 []int) {
+		sort.Slice(t1, func(i, j int) bool {
+			return t1[i] < t1[j]
+		})
+	}))
+	fmt.Println(res1)
+
+	res2 := GroupingBy(Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item2"},
+		TestItem{itemNum: 5, itemValue: "item2"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 4, itemValue: "item4"},
+		TestItem{itemNum: 0, itemValue: "item4"},
+		TestItem{itemNum: 4, itemValue: "item5"},
+		TestItem{itemNum: 9, itemValue: "item5"},
+	).Filter(func(item TestItem) bool {
+		if item.itemNum != 1 {
+			return true
+		}
+		return false
+	}), func(t TestItem) string {
+		return t.itemValue
+	}, func(t TestItem) int {
+		return t.itemNum
+	}, func(t1 []int) {
+		sort.Slice(t1, func(i, j int) bool {
+			return t1[i] < t1[j]
+		})
+	})
+	fmt.Println(res2)
+
 }
 
 func TestFilter(t *testing.T) {
@@ -448,12 +512,12 @@ func TestMap(t *testing.T) {
 			itemNum:   item.itemNum,
 			itemValue: item.itemValue,
 		}
-	}).Collect(collectors.ToSlice[any]())
+	}).ToSlice()
 	fmt.Println(res)
 }
 
 func TestFlatMap(t *testing.T) {
-	res := Of(
+	res := Map(Of(
 		TestItem{itemNum: 1, itemValue: "item1"},
 		TestItem{itemNum: 2, itemValue: "item2"},
 		TestItem{itemNum: 3, itemValue: "item3"},
@@ -462,19 +526,17 @@ func TestFlatMap(t *testing.T) {
 			return true
 		}
 		return false
-	}).FlatMap(func(item TestItem) Stream[any] {
-		return Of[any](
+	}).FlatMap(func(item TestItem) Stream[TestItem] {
+		return Of[TestItem](
 			TestItem{itemNum: item.itemNum * 10, itemValue: fmt.Sprintf("%s+%d", item.itemValue, item.itemNum)},
 			TestItem{itemNum: item.itemNum * 20, itemValue: fmt.Sprintf("%s+%d", item.itemValue, item.itemNum)},
 		)
-	}).Map(func(item any) any {
-		// 这里需要类型转换
-		ite := item.(TestItem)
+	}), func(item TestItem) ToTestItem {
 		return ToTestItem{
-			itemNum:   ite.itemNum,
-			itemValue: ite.itemValue,
+			itemNum:   item.itemNum,
+			itemValue: item.itemValue,
 		}
-	}).Collect(collectors.ToSlice[any]())
+	}).ToSlice()
 	fmt.Println(res)
 }
 
@@ -488,7 +550,7 @@ func TestConcatenate(t *testing.T) {
 	), Of(
 		TestItem{itemNum: 3, itemValue: "item3"},
 		TestItem{itemNum: 4, itemValue: "item4"},
-	)).Collect(collectors.ToSlice[TestItem]())
+	)).ToSlice()
 	fmt.Println(resConcat)
 }
 
@@ -545,57 +607,6 @@ func TestSimple(t *testing.T) {
 	fmt.Println(resLast.Get())
 }
 
-func TestToMap11(t *testing.T) {
-	resMap := Of(
-		TestItem{itemNum: 1, itemValue: "item1"},
-		TestItem{itemNum: 2, itemValue: "item2"},
-		TestItem{itemNum: 2, itemValue: "item3"},
-	).Collect(collectors.ToMap[TestItem](func(t TestItem) any {
-		return t.itemNum
-	}, func(item TestItem) any {
-		return item.itemValue
-	}, func(oldV, newV any) any {
-		return oldV
-	}))
-	fmt.Println(resMap)
-
-	resGroup := Of(
-		TestItem{itemNum: 1, itemValue: "item1"},
-		TestItem{itemNum: 2, itemValue: "item2"},
-		TestItem{itemNum: 2, itemValue: "item3"},
-	).Filter(func(item TestItem) bool {
-		if item.itemNum != 1 {
-			return true
-		}
-		return false
-	}).Collect(collectors.GroupingBy(func(t TestItem) any {
-		return t.itemNum
-	}, func(t TestItem) any {
-		return t
-	}))
-	fmt.Println(resGroup)
-}
-
-func TestToMapOpt1(t *testing.T) {
-	res := Of(
-		TestItem{itemNum: 1, itemValue: "item1"},
-		TestItem{itemNum: 2, itemValue: "item2"},
-		TestItem{itemNum: 2, itemValue: "item2"},
-	).Filter(func(item TestItem) bool {
-		if item.itemNum != 1 {
-			return true
-		}
-		return false
-	}).Collect(collectors.ToMap[TestItem](func(t TestItem) any {
-		return t.itemNum
-	}, func(item TestItem) any {
-		return item.itemValue
-	}, func(oldV, newV any) any {
-		return oldV
-	}))
-	fmt.Println(res)
-}
-
 func TestGroupby(t *testing.T) {
 	res := Of(
 		TestItem{itemNum: 1, itemValue: "item1"},
@@ -622,4 +633,37 @@ func TestGroupby(t *testing.T) {
 		})
 	})
 	fmt.Println(res1)
+}
+
+func TestStatistic(t *testing.T) {
+	res := Collect(Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "3tem21"},
+		TestItem{itemNum: 2, itemValue: "2tem22"},
+		TestItem{itemNum: 2, itemValue: "1tem22"},
+		TestItem{itemNum: 2, itemValue: "4tem23"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+	).MapToInt(func(t TestItem) int {
+		return t.itemNum * 2
+	}), collectors.Statistic[int]())
+
+	println(res.GetAverage())
+	res1 := Of([]int64{1, 2, 6, 8, 9, 20}...).SumInt64Statistics()
+	println(res1.GetSum())
+	println(res1.GetCount())
+	println(res1.GetMax())
+	println(res1.GetMin())
+	println(res1.GetAverage())
+
+	res2 := Of([]int32{1, 2, 6, 8, 9, 20}...).SumInt32Statistics()
+	println(res2.GetSum())
+
+	res3 := Of([]int{1, 2, 6, 8, 9, 20}...).SumIntStatistics()
+	println(res3.GetSum())
+
+	res4 := Of([]float32{1, 2, 6, 8, 9, 20}...).SumFloat32Statistics()
+	println(res4.GetSum())
+
+	res5 := Of([]float32{1, 2, 6, 8, 9, 20}...).SumFloat64Statistics()
+	println(res5.GetSum())
 }
