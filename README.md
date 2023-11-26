@@ -78,7 +78,7 @@
 1. go.mod 中加入如下配置
 
 ```
-require github.com/todocoder/go-stream v1.0.0
+require github.com/todocoder/go-stream v1.1.0
 ```
 
 2. 执行
