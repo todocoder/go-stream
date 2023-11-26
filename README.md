@@ -57,6 +57,19 @@
 | ToSlice()   | 将流处理后转化为切片                            |
 | Collect()   | 将流转换为指定的类型，通过collectors.Collector进行指定 |
 
+### 转换函数
+
+&emsp;&emsp; 通过这几个函数你可以实现类型转换，分组，flatmap 等处理
+
+> 注意：这几个**函数**非常有用，也是最常用的，由于Go语言泛型的局限性，**Go语言方法**不支持自己独立的泛型，所以导致用Stream中的方法转换只能用 interface{} 代替，这样会有个非常麻烦的问题就是，转换后用的时候必须得强转才能用，所以我把这些写成转换函数，就不会受制于类(struct) 的泛型了。
+
+| API          | 功能说明                                                     |
+| ------------ | ------------------------------------------------------------ |
+| Map()        | 类型转换(优点：和上面的Map不一样的是，这里转换后可以直接使用，不需要强转) |
+| FlatMap()    | 按照条件将已有元素转换为另一个对象类型，一对多逻辑，即原来一个元素对象可能会转换为1个或者多个新类型的元素，返回新的stream流(优点：同Map) |
+| GroupingBy() | 对元素进行逐个遍历，然后执行给定的处理逻辑                   |
+| Collect()    | 将流转换为指定的类型，通过collectors.Collector进行指定(优点：转换后的类型可以直接使用，无需强转) |
+
 ## go-stream的使用
 
 ### 库的引入
@@ -295,8 +308,8 @@ func TestFlatMap(t *testing.T) {
 [wo shi todocoder ha ha ha]
 ```
 
-> &emsp;&emsp;这里需要补充一句，只要经过Map或者FlatMap 处理后，类型就会统一变成 `any`了，而不是 泛型`T`，如需要强制类型处理，需要手动转换一下  
-> &emsp;&emsp;这个原因是Go泛型的局限性导致的，不能在struct 方法中定义其他类型的泛型，这块看后续官方是否支持了  
+> **注意：这里需要补充一句，只要经过Map或者FlatMap 处理后，类型就会统一变成 `any`了，而不是 泛型`T`，如需要强制类型处理，需要手动转换一下  
+> 这个原因是Go泛型的局限性导致的，不能在struct 方法中定义其他类型的泛型，这块看后续官方是否支持了**  
 > 
 > 可以看如下代码
 
@@ -333,6 +346,7 @@ func TestMap(t *testing.T) {
 *TestItem{itemNum: 1, itemValue: "item1"},*  
 *TestItem{itemNum: 2, itemValue: "item2"},*  
 *TestItem{itemNum: 2, itemValue: "item3"}*  
+
 1. 第一个需求是：把这个列表按 itemNum为Key, itemValue 为 value转换成Map  
 2. 第二个需求是：把这个列表按 itemNum为Key, 分组后转换成Map  
 我们看一下代码：
@@ -376,6 +390,40 @@ map[1:item1 2:item2]
 第二个需求:
 map[1:[{1 item1}] 2:[{2 item2} {2 item3}]]
 ```
+
+### 转换函数
+
+#### Map、FlatMap
+
+Map与FlatMap都是用于转换已有的元素为其它元素，区别点在于：
+
+1. Map 按照条件将已有元素转换为另一个对象类型，一对一逻辑
+2. FlatMap 按照条件将已有元素转换为另一个对象类型，一对多逻辑
+
+比如我要把 TestItem{itemNum: 1, itemValue: "item1"} 转换为ToTestItem{itemNum: 1, itemValue: "item1"}，并且把一个元素按照一定的规则扩展成两个元素，可以通过如下的代码来实现
+
+```go
+func TestFlatMap(t *testing.T) {
+	res := stream.Map(stream.Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+	).FlatMap(func(item TestItem) Stream[TestItem] {
+		return Of[TestItem](
+			TestItem{itemNum: item.itemNum * 10, itemValue: fmt.Sprintf("%s+%d", item.itemValue, item.itemNum)},
+			TestItem{itemNum: item.itemNum * 20, itemValue: fmt.Sprintf("%s+%d", item.itemValue, item.itemNum)},
+		)
+	}), func(item TestItem) ToTestItem {
+		return ToTestItem{
+			itemNum:   item.itemNum,
+			itemValue: item.itemValue,
+		}
+	}).ToSlice()
+	fmt.Println(res)
+}
+```
+
+
 
 ## 最后
 
