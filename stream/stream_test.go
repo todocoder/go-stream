@@ -18,6 +18,39 @@ type TestItemS struct {
 	itemValue string `json:"itemValue"`
 }
 
+func TestStreamT(t *testing.T) {
+	items := []TestItem{
+		{itemNum: 7, itemValue: "item7"}, {itemNum: 6, itemValue: "item6"},
+		{itemNum: 1, itemValue: "item1"}, {itemNum: 2, itemValue: "item2"},
+		{itemNum: 3, itemValue: "item3"}, {itemNum: 4, itemValue: "item4"},
+		{itemNum: 5, itemValue: "item5"}, {itemNum: 5, itemValue: "item5"},
+		{itemNum: 5, itemValue: "item5"}, {itemNum: 8, itemValue: "item8"},
+	}
+	res := Of(items...).Filter(func(item TestItem) bool {
+		// 过滤掉1的值
+		return item.itemNum != 4
+	}).Distinct(func(item TestItem) any {
+		// 按itemNum 去重
+		return item.itemNum
+	}).Sorted(func(a, b TestItem) bool {
+		// 按itemNum升序排序
+		return a.itemNum < b.itemNum
+	}).Skip(1).Limit(6).Reverse().ToSlice()
+	fmt.Println(res)
+}
+func TestStream(t *testing.T) {
+	// 把两个字符串["wo shi todocoder","ha ha ha"] 转为 ["wo","shi","todocoder","ha","ha","ha"]
+
+	res := Of([]*string{nil}).Count()
+	fmt.Println(res)
+	var temp []string
+	Of(temp...).ForEach(func(t string) {
+		println(t)
+	})
+
+	fmt.Println("end")
+}
+
 func TestFlatMap2(t *testing.T) {
 	// 把两个字符串["wo shi todocoder","ha ha ha"] 转为 ["wo","shi","todocoder","ha","ha","ha"]
 	res := Of([]string{"wo shi todocoder", "ha ha ha"}...).FlatMap(func(s string) Stream[string] {
@@ -666,4 +699,68 @@ func TestStatistic(t *testing.T) {
 
 	res5 := Of([]float32{1, 2, 6, 8, 9, 20}...).SumFloat64Statistics()
 	println(res5.GetSum())
+}
+
+type Student struct {
+	Num   int
+	Score int
+	Age   int
+	Name  string
+}
+
+// 班级有一组学号{1,2,3,....,12}，对应12个人的信息在内存里面存着
+// 把这学号转换成具体的 Student 类，过滤掉 Score 为 1的，并且按评分 Score 分组，并且对各组按照 Age 降序排列
+func TestStudents(t *testing.T) {
+	studentMap := map[int]Student{
+		1:  {Num: 1, Name: "小明", Score: 3, Age: 26},
+		2:  {Num: 2, Name: "小红", Score: 4, Age: 27},
+		3:  {Num: 3, Name: "小李", Score: 5, Age: 19},
+		4:  {Num: 4, Name: "老王", Score: 1, Age: 23},
+		5:  {Num: 5, Name: "小王", Score: 2, Age: 29},
+		6:  {Num: 6, Name: "小绿", Score: 2, Age: 24},
+		7:  {Num: 7, Name: "小蓝", Score: 3, Age: 29},
+		8:  {Num: 8, Name: "小橙", Score: 3, Age: 30},
+		9:  {Num: 9, Name: "小黄", Score: 4, Age: 22},
+		10: {Num: 10, Name: "小黑", Score: 5, Age: 21},
+		11: {Num: 11, Name: "小紫", Score: 3, Age: 32},
+		12: {Num: 12, Name: "小刘", Score: 2, Age: 35},
+	}
+	// v1.0.* 的代码这样实现 此方法已经新
+	//res := Of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12).Map(func(n int) any {
+	//	return studentMap[n]
+	//}).Filter(func(s any) bool {
+	//	// 这里需要强转
+	//	tempS := s.(Student)
+	//	// 过滤掉1的
+	//	return tempS.Score != 1
+	//}).Collect(collectors.GroupingBy(func(t any) int {
+	//	return t.(Student).Score
+	//}, func(t any) any {
+	//	return t
+	//}, func(t1 []any) {
+	//	sort.Slice(t1, func(i, j int) bool {
+	//		return t1[i].(Student).Age < t1[j].(Student).Age
+	//	})
+	//}))
+	//println(res)
+
+	// v1.1.* 的代码这样实现
+	res := GroupingBy(Map(Of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), func(n int) Student {
+		// 注意 这里的返回类型可以是目标类型了
+		return studentMap[n]
+	}).Filter(func(s Student) bool {
+		// 这里过滤也不需要转换类型
+		// 过滤掉1的
+		return s.Score != 1
+	}), func(t Student) int {
+		return t.Score
+	}, func(t Student) Student {
+		return t
+	}, func(t1 []Student) {
+		// 按年龄降序排列
+		sort.Slice(t1, func(i, j int) bool {
+			return t1[i].Age > t1[j].Age
+		})
+	})
+	println(res)
 }
