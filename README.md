@@ -1,97 +1,104 @@
-# Go-Stream
+&emsp;&emsp;
+
+**Read this in other languages: [【English](README.md) | [中文】](README_zh.md).**
+
+# Stream Collections for Go. Inspired in Java 8 Streams and go-zero.
 
 ## 简介
-&emsp;&emsp;在JAVA中，涉及到对数组、Collection等集合类中的元素进行操作的时候，通常会通过循环的方式进行逐个处理，或者使用Stream的方式进行处理。那么在Go中用的多的是切片，那么这里基于Java的stream的操作习惯用Go语言(
-1.18+)的泛型和通道实现了一些简单的流操作功能。
-> go-stream代码地址：https://github.com/todocoder/go-stream
+&emsp;&emsp;In JAVA, when it comes to operating elements in collection classes such as arrays and Collections, they are usually processed one by one through a loop, or processed using a Stream. Well, slices are mostly used in Go, so the Java-based stream operations here are customary to use the Go language (
+1.18+)'s generics and channels implement some simple stream operation functions.
 
-## Stream 介绍
+**Data converted with Go-Stream or Groupby can be used directly without assertions.**
 
-&emsp;&emsp;可以将Stream流操作分为3种类型：Stream的生成，Stream中间处理，Stream的终止
+> go-stream code address：https://github.com/todocoder/go-stream
 
-### Stream的生成
+## Stream Introduction
 
-&emsp;&emsp;主要负责新建一个Stream流，或者基于现有的数组创建出新的Stream流。
+&emsp;&emsp;Stream operations can be divided into three types: Stream generation, Stream intermediate processing, and Stream termination.
 
-| API              | 功能说明                                                          |
-|------------------|---------------------------------------------------------------|
-| Of()             | 通过可变参数`(values ...T)`创建出一个新的stream串行流对象                       |
-| OfParallel()     | 通过可变参数`(values ...T)`创建出一个可并行执行stream串行流对象                    |
-| OfFrom()         | 通过方法生成`(generate func(source chan<- T))`创建出一个新的stream串行流对象    |
-| OfFromParallel() | 通过方法生成`(generate func(source chan<- T))`创建出一个可并行执行stream串行流对象 |
-| Concat()         | 多个流拼接的方式创建出一个串行执行stream串行流对象                                  |
+### Stream generation
 
-### Stream中间处理
+&emsp;&emsp;Mainly responsible for creating a new Stream or creating a new Stream based on an existing array.
 
-&emsp;&emsp;主要负责对Stream进行处理操作，并返回一个新的Stream对象，中间处理操作可以进行叠加。
+| API              | Function Description                                                                                                   |
+|------------------|------------------------------------------------------------------------------------------------------------------------|
+| Of()             | Create a new stream serial stream object through variable parameters `(values ...T)`                                   |
+| OfParallel()     | Create a stream serial stream object that can be executed in parallel through variable parameters `(values ...T)`      |
+| OfFrom()         | Create a new stream serial stream object through the method `(generate func(source chan<- T))`                         |
+| OfFromParallel() | Generate a serial stream object that can be executed in parallel through the method `(generate func(source chan<- T))` |
+| Concat()         | Multiple streams are spliced together to create a serial execution stream serial stream object.                        |
 
-| API        | 功能说明                                                              |
-|------------|-------------------------------------------------------------------|
-| Filter()   | 按照条件过滤符合要求的元素， 返回新的stream流                                        |
-| Map()      | 按照条件将已有元素转换为另一个对象类型，一对一逻辑，返回新类型的stream流                           |
-| FlatMap()  | 按照条件将已有元素转换为另一个对象类型，一对多逻辑，即原来一个元素对象可能会转换为1个或者多个新类型的元素，返回新的stream流 |
-| Skip()     | 跳过当前流前面指定个数的元素                                                    |
-| Limit()    | 仅保留当前流前面指定个数的元素，返回新的stream流                                       |
-| Concat()   | 多个流拼接到当前流下                                                        |
-| Distinct() | 按照条件去重符合要求的元素， 返回新的stream流                                        |
-| Sorted()   | 按照条件对元素进行排序， 返回新的stream流                                          |
-| Reverse()  | 对流中元素进行返转操作                                                       |
-| Peek()     | 对stream流中的每个元素进行逐个遍历处理，返回处理后的stream流                              |
+### Stream intermediate processing
 
-### Stream的终止
+&emsp;&emsp;Mainly responsible for processing Stream and returning a new Stream object. Intermediate processing operations can be superimposed.
 
-&emsp;&emsp;通过终止函数操作之后，Stream流将会结束，最后可能会执行某些逻辑处理，或者是按照要求返回某些执行后的结果数据。
+| API        | Function Description                                                                                                                                                                                                      |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Filter()   | Filter elements that meet the requirements according to conditions and return a new stream                                                                                                                                |
+| Map()      | Convert existing elements to another object type according to conditions, one-to-one logic, and return a new type of stream                                                                                               |
+| FlatMap()  | Convert existing elements to another object type according to conditions, one-to-many logic, that is, the original element object may be converted into one or more elements of a new type, and a new stream is returned. |
+| Skip()     | Skip the specified number of elements in front of the current stream                                                                                                                                                      |
+| Limit()    | Only retain the specified number of elements in front of the current stream and return a new stream                                                                                                                       |
+| Concat()   | Multiple streams are spliced under the current stream                                                                                                                                                                     |
+| Distinct() | Eliminate duplicate elements that meet the requirements according to conditions and return a new stream.                                                                                                                  |
+| Sorted()   | Sort elements according to conditions and return a new stream                                                                                                                                                             |
+| Reverse()  | Reverse elements in a stream                                                                                                                                                                                              |
+| Peek()     | Traverse each element in the stream one by one and return the processed stream                                                                                                                                            |
 
-| API         | 功能说明                                  |
-|-------------|---------------------------------------|
-| FindFirst() | 获取第一个元素                               |
-| FindLast()  | 获取最后一个元素                              |
-| ForEach()   | 对元素进行逐个遍历，然后执行给定的处理逻辑                 |
-| Reduce()    | 对流中元素进行聚合处理                           |
-| AnyMatch()  | 返回此流中是否存在元素满足所提供的条件                   |
-| AllMatch()  | 返回此流中是否全都满足条件                         |
-| NoneMatch() | 返回此流中是否全都不满足条件                        |
-| Count()     | 返回此流中元素的个数                            |
-| Max()       | 返回stream处理后的元素最大值                     |
-| Min()       | 返回stream处理后的元素最小值                     |
-| ToSlice()   | 将流处理后转化为切片                            |
-| Collect()   | 将流转换为指定的类型，通过collectors.Collector进行指定 |
+### Stream termination
 
-### 转换函数
+&emsp;&emsp;After the termination function operation, the Stream will end, and finally some logical processing may be performed, or some execution result data may be returned as required.
 
-&emsp;&emsp; 通过这几个函数你可以实现类型转换，分组，flatmap 等处理
+| API         | Function Description                                                                     |
+|-------------|------------------------------------------------------------------------------------------|
+| FindFirst() | Get the first element                                                                    |
+| FindLast()  | Get the last element                                                                     |
+| ForEach()   | Traverse the elements one by one and then execute the given processing logic             |
+| Reduce()    | Aggregate elements in a stream                                                           |
+| AnyMatch()  | Returns whether there is an element in this stream that satisfies the provided condition |
+| AllMatch()  | Returns whether all conditions in this stream are met                                    |
+| NoneMatch() | Returns whether all conditions in this stream are not met                                |
+| Count()     | Returns the number of elements in this stream                                            |
+| Max()       | Returns the maximum value of the element after stream processing                         |
+| Min()       | Returns the minimum value of the element after stream processing                         |
+| ToSlice()   | Convert streams into slices after processing                                             |
+| Collect()   | Convert the stream to the specified type, specified through collectors.Collector         |
 
-> 注意：这几个**函数**非常有用，也是最常用的，由于Go语言泛型的局限性，**Go语言方法**不支持自己独立的泛型，所以导致用Stream中的方法转换只能用 interface{} 代替，这样会有个非常麻烦的问题就是，转换后用的时候必须得强转才能用，所以我把这些写成转换函数，就不会受制于类(struct) 的泛型了。
+### Conversion Function
 
-| API          | 功能说明                                                     |
-| ------------ | ------------------------------------------------------------ |
-| Map()        | 类型转换(优点：和上面的Map不一样的是，这里转换后可以直接使用，不需要强转) |
-| FlatMap()    | 按照条件将已有元素转换为另一个对象类型，一对多逻辑，即原来一个元素对象可能会转换为1个或者多个新类型的元素，返回新的stream流(优点：同Map) |
-| GroupingBy() | 对元素进行逐个遍历，然后执行给定的处理逻辑                   |
-| Collect()    | 将流转换为指定的类型，通过collectors.Collector进行指定(优点：转换后的类型可以直接使用，无需强转) |
+&emsp;&emsp;Through these functions you can implement type conversion, grouping, flatmap and other processing
 
-## go-stream的使用
+> Note: These **functions** are very useful and the most commonly used. Due to the limitations of Go language generics, **Go language methods** do not support their own independent generics, so the method in Stream is used for conversion. It can only be replaced by interface{}. This will have a very troublesome problem. It must be forced to be used after conversion, so I wrote these as conversion functions so that they will not be subject to the generics of the class (struct).。
 
-### 库的引入
+| API          | Function Description                                                                                                                                                                                                                             |
+|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Map()        | Type conversion (advantage: unlike the Map above, it can be used directly after conversion without forced conversion)                                                                                                                            |
+| FlatMap()    | Convert existing elements to another object type according to conditions, one-to-many logic, that is, an original element object may be converted into one or more elements of a new type, and a new stream is returned (advantage: same as Map) |
+| GroupingBy() | Traverse the elements one by one and then execute the given processing logic                                                                                                                                                                     |
+| Collect()    | Convert the stream to the specified type and specify it through collectors.Collector (advantage: the converted type can be used directly without forced conversion)                                                                              |
 
-&emsp;&emsp;由于用到了泛型，支持的版本为golang 1.18+
-1. go.mod 中加入如下配置
+## Use of Go-Stream
+
+### Introduce
+
+&emsp;&emsp;Due to the use of generics, the supported version is golang 1.18+
+1. Add the following configuration to go.mod
 
 ```
 require github.com/todocoder/go-stream v1.1.0
 ```
 
-2. 执行
+2. Implement
 
 ```shell
 go mod tidy -go=1.20
 go mod download
 ```
 
-### ForEach、Peek的使用
+### Use of ForEach and Peek
 
-&emsp;&emsp;ForEach和Peek都可以用于对元素进行遍历然后逐个的进行处理。
-但Peek属于中间方法，而ForEach属于终止方法。也就是说Peek只能在流中间处理元素，没法直接执行得到结果，其后面必须还要有其它终止操作的时候才会被执行；而ForEach作为无返回值的终止方法，则可以直接执行相关操作。
+&emsp;&emsp;Both ForEach and Peek can be used to traverse elements and process them one by one.
+But Peek is an intermediate method, while ForEach is a termination method. In other words, Peek can only process elements in the middle of the stream, and cannot directly execute it to obtain the result. It will only be executed when there are other termination operations; and ForEach, as a termination method without a return value, can directly execute the relevant operate.
 
 #### ForEach
 
@@ -125,7 +132,7 @@ func TestForEachAndPeek(t *testing.T) {
 }
 ```
 
-结果如下：
+The result is as follows:
 
 ```
 item1
@@ -136,11 +143,11 @@ item2peek
 item3peek
 ```
 
-从代码及结果中得知，ForEach只是用来循环流中的元素。而Peek可以在流中间修改流中的元素。
+From the code and results, we know that ForEach is only used to loop through the elements in the stream. Peek can modify elements in the stream in the middle of the stream.
 
 ### Filter、Sorted、Distinct、Skip、Limit、Reverse
 
-&emsp;&emsp;这几个是go-stream中比较常用的中间处理方法，具体说明在上面已标出。使用的话我们可以在流中一个或多个的组合便用。
+&emsp;&emsp;These are the more commonly used intermediate processing methods in go-stream, and the specific instructions are marked above. If used, we can use one or more combinations in the stream.
 
 ```go
 package todocoder
@@ -160,28 +167,28 @@ func TestStream(t *testing.T) {
 		TestItem{itemNum: 8, itemValue: "item8"},
 		TestItem{itemNum: 9, itemValue: "item9"},
 	).Filter(func(item TestItem) bool {
-		// 过滤掉1的值
+		// Filter out values of 4
 		return item.itemNum != 4
 	}).Distinct(func(item TestItem) any {
-		// 按itemNum 去重
+		// Press itemNum to remove duplicates
 		return item.itemNum
 	}).Sorted(func(a, b TestItem) bool {
-		// 按itemNum升序排序
+		// Sort by itemNum in ascending order
 		return a.itemNum < b.itemNum
 	}).Skip(1).Limit(6).Reverse().Collect(collectors.ToSlice[TestItem]())
 	fmt.Println(res)
 }
 ```
 
-1. 使用Filter过滤掉1的值
-2. 通过Distinct对itemNum 去重(在第1步的基础上，下面同理在上一步的基础上)
-3. 通过Sorted 按itemNum升序排序
-4. 用Skip 从下标为1的元素开始
-5. 使用Limit截取排在前6位的元素
-6. 使用Reverse 对流中元素进行返转操作
-7. 使用collect终止操作将最终处理后的数据收集到Slice中
+1. Use Filter() to filter out the value of 4
+2. Deduplicate itemNum through Distinct() (based on the first step, the following is the same as the previous step)
+3. Sorted() by itemNum in ascending order by Sorted
+4. Use Skip() to start from the element with index 1
+5. Use Limit() to intercept the top 6 elements
+6. Use Reverse() to reverse elements in a stream
+7. Use Collect() to terminate the operation and collect the final processed data into Slice
 
-结果：
+result：
 
 ```
 [{8 item8} {7 item7} {6 item6} {5 item5} {3 item3} {2 item2}]
@@ -189,7 +196,7 @@ func TestStream(t *testing.T) {
 
 ### AllMatch、AnyMatch、NoneMatch、Count、FindFirst、FindLast
 
-&emsp;&emsp;这些方法，均属于这里说的简单结果终止方法。代码如下：
+&emsp;&emsp;These methods all belong to the simple result termination methods mentioned here. code show as below:
 
 ```go
 package todocoder
@@ -201,7 +208,7 @@ func TestSimple(t *testing.T) {
 		TestItem{itemNum: 8, itemValue: "item8"},
 		TestItem{itemNum: 1, itemValue: "item1"},
 	).AllMatch(func(item TestItem) bool {
-		// 返回此流中是否全都==1
+		// Returns whether all in this stream == 1
 		return item.itemNum == 1
 	})
 	fmt.Println(allMatch)
@@ -214,7 +221,7 @@ func TestSimple(t *testing.T) {
 	).Filter(func(item TestItem) bool {
 		return item.itemNum != 1
 	}).AnyMatch(func(item TestItem) bool {
-		// 返回此流中是否存在 == 8的
+		// Returns whether there is == 8 in this stream
 		return item.itemNum == 8
 	})
 	fmt.Println(anyMatch)
@@ -227,7 +234,7 @@ func TestSimple(t *testing.T) {
 	).Filter(func(item TestItem) bool {
 		return item.itemNum != 1
 	}).NoneMatch(func(item TestItem) bool {
-		// 返回此流中是否全部不等于8
+		// Returns whether all in this stream are not equal to 8
 		return item.itemNum == 8
 	})
 	fmt.Println(noneMatch)
@@ -248,7 +255,7 @@ func TestSimple(t *testing.T) {
 }
 ```
 
-结果：
+result：
 
 ```
 false
@@ -260,12 +267,12 @@ false
 
 ### Map、FlatMap
 
-Map与FlatMap都是用于转换已有的元素为其它元素，区别点在于：
+Both Map and FlatMap are used to convert existing elements into other elements. The difference is:
 
-1. Map 按照条件将已有元素转换为另一个对象类型，一对一逻辑
-2. FlatMap 按照条件将已有元素转换为另一个对象类型，一对多逻辑
+1. Map() converts existing elements into another object type according to conditions, one-to-one logic
+2. FlatMap() converts existing elements to another object type according to conditions, one-to-many logic
 
-比如我要把 int 1 转为 TestItem{itemNum: 1, itemValue: "item1"}
+For example, I want to convert int 1 to TestItem{itemNum: 1, itemValue: "item1"}
 
 ```go
 package todocoder
@@ -285,14 +292,14 @@ func TestMap(t *testing.T) {
 [{1 item1} {2 item2} {3 item3} {4 item4} {7 item7}]
 ```
 
-那如果我要把两个字符串["wo shi todocoder","ha ha ha"] 转为 ["wo","shi","todocoder","ha","ha","ha"]
-用Map就不行了,这就需要用到FlatMap了
+So if I want to convert two strings ["wo shi todocoder", "ha ha ha"] into ["wo", "shi", "todocoder", "ha", "ha", "ha"]
+Using Map won’t work, so you need to use FlatMap
 
 ```go
 package todocoder
 
 func TestFlatMap(t *testing.T) {
-	// 把两个字符串["wo shi todocoder","ha ha ha"] 转为 ["wo","shi","todocoder","ha","ha","ha"]
+	// Convert two strings ["wo shi todocoder", "ha ha ha"] into ["wo", "shi", "todocoder", "ha", "ha", "ha"]
 	res := stream.Of([]string{"wo shi todocoder", "ha ha ha"}...).FlatMap(func(s string) stream.Stream[any] {
 		return stream.OfFrom(func(source chan<- any) {
 			for _, str := range strings.Split(s, " ") {
@@ -308,10 +315,10 @@ func TestFlatMap(t *testing.T) {
 [wo shi todocoder ha ha ha]
 ```
 
-> **注意：这里需要补充一句，只要经过Map或者FlatMap 处理后，类型就会统一变成 `any`了，而不是 泛型`T`，如需要强制类型处理，需要手动转换一下  
-> 这个原因是Go泛型的局限性导致的，不能在struct 方法中定义其他类型的泛型，这块看后续官方是否支持了**  
+> **Note: It is necessary to add here that as long as it is processed by Map or FlatMap, the type will become `any` instead of generic `T`. If forced type processing is required, manual conversion is required.
+> This reason is caused by the limitations of Go generics. Other types of generics cannot be defined in the struct method. This will depend on whether it will be officially supported in the future.**
 > 
-> 可以看如下代码
+> You can see the following code:
 
 ```go
 package todocoder
@@ -325,7 +332,7 @@ func TestMap(t *testing.T) {
 			TestItem{itemNum: item.itemNum * 20, itemValue: fmt.Sprintf("%s+%d", item.itemValue, item.itemNum)},
 		)
 	}).Map(func(item any) any {
-		// 这里需要类型转换
+		// Type assertion is required here
 		ite := item.(TestItem)
 		return ToTestItem{
 			itemNum:   ite.itemNum,
@@ -338,24 +345,25 @@ func TestMap(t *testing.T) {
 
 ### collectors.ToMap、collectors.GroupBy
 
-&emsp;&emsp;这两个是相对复杂的终止方法，`ToMap` 是类似于Java stream流中`Collectors.toMap()`可以把切片数组转换成 切片map, `GroupBy`
-类似于Java stream中 `Collectors.groupingby()`方法，按某个维度来分组
+&emsp;&emsp;These two are relatively complex termination methods. `ToMap` is similar to `Collectors.toMap()` in Java stream, which can convert the slice array into a slice map, `GroupBy`
+Similar to the `Collectors.groupingby()` method in Java stream, grouped by a certain dimension
 
-我有如下切片列表：
+The following slice list：
 
 *TestItem{itemNum: 1, itemValue: "item1"},*  
 *TestItem{itemNum: 2, itemValue: "item2"},*  
 *TestItem{itemNum: 2, itemValue: "item3"}*  
 
-1. 第一个需求是：把这个列表按 itemNum为Key, itemValue 为 value转换成Map  
-2. 第二个需求是：把这个列表按 itemNum为Key, 分组后转换成Map  
-我们看一下代码：
+1. The first requirement is: convert this list into a Map according to itemNum as Key and itemValue as value. 
+2. The second requirement is: group this list according to itemNum as Key, group it and convert it into a Map
+
+Let's take a look at the code：
 
 ```go
 package todocoder
 
 func TestToMap(t *testing.T) {
-	// 第一个需求
+	// The first requirement
 	resMap := Of(
 		TestItem{itemNum: 1, itemValue: "item1"},
 		TestItem{itemNum: 2, itemValue: "item2"},
@@ -367,9 +375,9 @@ func TestToMap(t *testing.T) {
 	}, func(oldV, newV any) any {
 		return oldV
 	}))
-	fmt.Println("第一个需求:")
+	fmt.Println("The first requirement:")
 	fmt.Println(resMap)
-	// 第二个需求
+	// The second requirement
 	resGroup := Of(
 		TestItem{itemNum: 1, itemValue: "item1"},
 		TestItem{itemNum: 2, itemValue: "item2"},
@@ -379,29 +387,28 @@ func TestToMap(t *testing.T) {
 	}, func(t TestItem) any {
 		return t
 	}))
-	fmt.Println("第二个需求:")
+	fmt.Println("The second requirement:")
 	fmt.Println(resGroup)
 }
 ```
 
 ```
-第一个需求:
+The first requirement:
 map[1:item1 2:item2]
-第二个需求:
+The second requirement:
 map[1:[{1 item1}] 2:[{2 item2} {2 item3}]]
 ```
 
-### 转换函数
+### Conversion Function
 
-#### Map、FlatMap
+### Map、FlatMap(No assertion required)
 
-Map与FlatMap都是用于转换已有的元素为其它元素，区别点在于：
+Both Map and FlatMap are used to convert existing elements into other elements. The difference is:
 
-1. Map 按照条件将已有元素转换为另一个对象类型，一对一逻辑
-2. FlatMap 按照条件将已有元素转换为另一个对象类型，一对多逻辑
+1. Map() converts existing elements into another object type according to conditions, one-to-one logic
+2. FlatMap() converts existing elements to another object type according to conditions, one-to-many logic
 
-比如我要把 TestItem{itemNum: 1, itemValue: "item1"} 转换为ToTestItem{itemNum: 1, itemValue: "item1"}，并且把一个元素按照一定的规则扩展成两个元素，可以通过如下的代码来实现
-
+For example, if I want to convert TestItem{itemNum: 1, itemValue: "item1"} to ToTestItem{itemNum: 1, itemValue: "item1"}, and expand one element into two elements according to certain rules, I can use the following code to fulfill
 ```go
 func TestFlatMap(t *testing.T) {
 	res := stream.Map(stream.Of(
@@ -423,11 +430,50 @@ func TestFlatMap(t *testing.T) {
 }
 ```
 
+#### GroupingBy() (Use results without assertions)
+Need:
+The class has a set of student numbers `{1,2,3,....,12}`, and the information corresponding to 12 people is stored in the memory. Convert this student number into a specific Student class, filter out those with a Score of 1, and Group by Score and sort each group in descending order by Age
+
+```go
+
+studentMap := map[int]Student{
+    1:  {Num: 1, Name: "小明", Score: 3, Age: 26},
+    2:  {Num: 2, Name: "小红", Score: 4, Age: 27},
+    3:  {Num: 3, Name: "小李", Score: 5, Age: 19},
+    4:  {Num: 4, Name: "老王", Score: 1, Age: 23},
+    5:  {Num: 5, Name: "小王", Score: 2, Age: 29},
+    6:  {Num: 6, Name: "小绿", Score: 2, Age: 24},
+    7:  {Num: 7, Name: "小蓝", Score: 3, Age: 29},
+    8:  {Num: 8, Name: "小橙", Score: 3, Age: 30},
+    9:  {Num: 9, Name: "小黄", Score: 4, Age: 22},
+    10: {Num: 10, Name: "小黑", Score: 5, Age: 21},
+    11: {Num: 11, Name: "小紫", Score: 3, Age: 32},
+    12: {Num: 12, Name: "小刘", Score: 2, Age: 35},
+}
+
+res := GroupingBy(Map(Of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), func(n int) Student {
+    // Note that the return type here is the target type, no assertion is needed
+    return studentMap[n]
+}).Filter(func(s Student) bool {
+    // There is no need to convert types when filtering here.
+    return s.Score != 1
+}), func(t Student) int {
+    return t.Score
+}, func(t Student) Student {
+    return t
+}, func(t1 []Student) {
+    // Sort by age in descending order
+    sort.Slice(t1, func(i, j int) bool {
+        return t1[i].Age > t1[j].Age
+    })
+})
+println(res)
+```
 
 
-## 最后
+## At Last
 
-&emsp;&emsp;作为一个Java开发，用习惯了Stream操作，也没找到合适的轻量的stream框架，也不知道后续官方是否会出，在这之前，就先自己简单实现一个，后面遇到复杂的处理流程会持续的更新到上面
-除了上面这些功能，还有并行流处理，有兴趣可以自行查看体验[测试类:stream_test](https://github.com/todocoder/go-stream/blob/master/stream/stream_test.go) 
+&emsp;&emsp;As a Java developer, I am used to Stream operations, but I haven’t found a suitable lightweight stream framework. I don’t know whether the official one will be released in the future. Before that, I will simply implement one by myself. I will encounter complex processing processes later. Continuously update to the above
+In addition to the above functions, there is also parallel stream processing. If you are interested, you can check the experience by yourself [Test category: stream_test](https://github.com/todocoder/go-stream/blob/master/stream/stream_test.go)
 
-有什么问题可以留言，看到后第一时间回复
+If you have any questions, please leave a message and we will reply as soon as possible after seeing it.
