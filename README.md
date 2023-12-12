@@ -4,7 +4,7 @@
 
 # Stream Collections for Go. Inspired in Java 8 Streams and go-zero.
 
-## 简介
+## Introduction
 &emsp;&emsp;In JAVA, when it comes to operating elements in collection classes such as arrays and Collections, they are usually processed one by one through a loop, or processed using a Stream. Well, slices are mostly used in Go, so the Java-based stream operations here are customary to use the Go language (
 1.18+)'s generics and channels implement some simple stream operation functions.
 
