@@ -87,6 +87,14 @@ func (s Stream[T]) Peek(fn func(item *T)) Stream[T] {
 	})
 }
 
+// PeekP Point Peek
+func (s Stream[T]) PeekP(fn func(item T)) Stream[T] {
+	return s.Walk(func(item T, pipe chan<- T) {
+		fn(item)
+		pipe <- item
+	})
+}
+
 func (s Stream[T]) Limit(maxSize int64) Stream[T] {
 	if maxSize < 0 {
 		panic("n must not be negative")

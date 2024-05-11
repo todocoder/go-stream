@@ -139,6 +139,18 @@ func TestForEachAndPeek(t *testing.T) {
 	}).ForEach(func(item TestItem) {
 		fmt.Println(item.itemValue)
 	})
+
+	// Peek Point
+	fmt.Println("---------------------Peek Point---------------------")
+	Of(
+		&TestItem{itemNum: 1, itemValue: "item1"},
+		&TestItem{itemNum: 2, itemValue: "item2"},
+		&TestItem{itemNum: 3, itemValue: "item3"},
+	).PeekP(func(item *TestItem) {
+		item.itemValue = item.itemValue + "peekp"
+	}).ForEach(func(item *TestItem) {
+		fmt.Println(item.itemValue)
+	})
 }
 
 func TestPeek(t *testing.T) {
