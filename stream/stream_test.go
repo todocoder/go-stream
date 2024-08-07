@@ -776,3 +776,56 @@ func TestStudents(t *testing.T) {
 	})
 	println(res)
 }
+
+func TestStream_TakeWhile(t *testing.T) {
+	takeRes := Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "3tem21"},
+		TestItem{itemNum: 2, itemValue: "2tem22"},
+		TestItem{itemNum: 2, itemValue: "1tem22"},
+		TestItem{itemNum: 2, itemValue: "4tem23"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+	).TakeWhile(func(s TestItem) bool {
+		return s.itemNum == 2
+	}).ToSlice()
+	println(takeRes)
+}
+
+func TestStream_DropWhile(t *testing.T) {
+	dropRes := Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "3tem21"},
+		TestItem{itemNum: 2, itemValue: "2tem22"},
+		TestItem{itemNum: 2, itemValue: "1tem22"},
+		TestItem{itemNum: 2, itemValue: "4tem23"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+	).DropWhile(func(s TestItem) bool {
+		return s.itemNum == 2
+	}).ToSlice()
+	println(dropRes)
+}
+
+func TestStream_Optional(t *testing.T) {
+	t1 := &TestItem{itemNum: 1, itemValue: "item1"}
+	tOpt := OfOptional[TestItem](t1)
+	tOpt.IsPresent()
+	tOpt.OrElseGet(func() TestItem {
+		return TestItem{itemNum: 2, itemValue: "3tem21"}
+	})
+	tOpt.IfPresent(func(o TestItem) {
+		println(o.itemValue)
+	})
+	if v, ok := tOpt.Get(); ok {
+		println(v.itemValue)
+	}
+	nilOpt := OfOptionalNilable[TestItem](nil)
+	if v, ok := nilOpt.Get(); ok {
+		println(v.itemValue)
+	}
+	te := nilOpt.OrElse(TestItem{itemNum: 3, itemValue: "3tem31"})
+	on := OfOptional(&te)
+	if v, ok := on.Get(); ok {
+		println(v.itemValue)
+	}
+	println("end")
+}

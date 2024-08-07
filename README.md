@@ -1,6 +1,11 @@
 
 **Read this in other languages: [【English](README.md) | [中文】](README_zh.md).**
 
+**Quick start:**
+```
+go get github.com/todocoder/go-stream
+```
+
 # Stream Collections for Go. Inspired in Java 8 Streams and go-zero.
 
 ## Introduction
@@ -80,18 +85,10 @@
 
 ### Introduce
 
-&emsp;&emsp;Due to the use of generics, the supported version is golang 1.18+
-1. Add the following configuration to go.mod
-
+&emsp;&emsp;Due to the use of generics, the supported version is golang 1.18+  
+**Quick start:**
 ```
-require github.com/todocoder/go-stream v1.1.0
-```
-
-2. Implement
-
-```shell
-go mod tidy -go=1.20
-go mod download
+go get github.com/todocoder/go-stream
 ```
 
 ### Use of ForEach and Peek

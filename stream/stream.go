@@ -40,6 +40,20 @@ func (o Optional[T]) IfPresent(fn func(T)) {
 	}
 }
 
+func (o Optional[T]) OrElse(other T) T {
+	if o.v == nil {
+		return other
+	}
+	return *o.v
+}
+
+func (o Optional[T]) OrElseGet(fn func() T) T {
+	if o.v == nil {
+		return fn()
+	}
+	return *o.v
+}
+
 func newStream[T any](isParallel bool, items ...T) Stream[T] {
 	source := make(chan T, len(items))
 	for _, item := range items {
@@ -89,6 +103,7 @@ func (s Stream[T]) Peek(fn func(item *T)) Stream[T] {
 
 // PeekP Point Peek
 func (s Stream[T]) PeekP(fn func(item T)) Stream[T] {
+
 	return s.Walk(func(item T, pipe chan<- T) {
 		fn(item)
 		pipe <- item
@@ -135,6 +150,41 @@ func (s Stream[T]) Skip(n int64) Stream[T] {
 		close(source)
 	}()
 
+	return Range(source, s.isParallel)
+}
+
+// TakeWhile 获取满足fn 函数(从第一个开始(包括))，之前的数据
+func (s Stream[T]) TakeWhile(fn func(item T) bool) Stream[T] {
+	source := make(chan T)
+	go func() {
+		for item := range s.source {
+			source <- item
+			if fn(item) {
+				break
+			}
+		}
+		close(source)
+	}()
+	return Range(source, s.isParallel)
+}
+
+// DropWhile 丢弃满足fn 函数(从第一个开始截取)，之前的数据
+func (s Stream[T]) DropWhile(fn func(item T) bool) Stream[T] {
+	source := make(chan T)
+	go func() {
+		// 是否在 满足fn的游标之前
+		flag := true
+		for item := range s.source {
+			if fn(item) {
+				flag = false
+			}
+			if flag {
+				continue
+			}
+			source <- item
+		}
+		close(source)
+	}()
 	return Range(source, s.isParallel)
 }
 
@@ -719,10 +769,12 @@ func Concat[T any](s Stream[T], others ...Stream[T]) Stream[T] {
 }
 
 func GoSafe(fn func()) {
+	RequireNonNil(fn)
 	go RunSafe(fn)
 }
 
 func RunSafe(fn func()) {
+	RequireNonNil(fn)
 	defer Recover()
 	fn()
 }
@@ -735,4 +787,22 @@ func Recover(cleanups ...func()) {
 	if p := recover(); p != nil {
 		fmt.Println(p)
 	}
+}
+
+func RequireNonNil(obj any) {
+	if obj == nil {
+		panic("data must not be nil")
+	}
+}
+
+func OfOptional[T any](t *T) Optional[T] {
+	RequireNonNil(t)
+	return Optional[T]{v: t}
+}
+
+func OfOptionalNilable[T any](t *T) Optional[T] {
+	if t == nil {
+		return Optional[T]{v: nil}
+	}
+	return Optional[T]{v: t}
 }

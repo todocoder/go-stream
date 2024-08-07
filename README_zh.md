@@ -1,6 +1,11 @@
 
 **阅读其他语言版本: [【English](README.md) | [中文】](README_zh.md).**
 
+**快速使用**
+
+```
+go get github.com/todocoder/go-stream
+```
 
 # Go-Stream 受到 Java 8 Streams 和 go-zero stream的启发
 
@@ -81,18 +86,11 @@
 
 ### 库的引入
 
-&emsp;&emsp;由于用到了泛型，支持的版本为golang 1.18+
-1. go.mod 中加入如下配置
+&emsp;&emsp;由于用到了泛型，支持的版本为golang 1.18+   
+**快速使用**
 
 ```
-require github.com/todocoder/go-stream v1.1.0
-```
-
-2. 执行
-
-```shell
-go mod tidy -go=1.20
-go mod download
+go get github.com/todocoder/go-stream
 ```
 
 ### ForEach、Peek的使用
