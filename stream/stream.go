@@ -7,6 +7,7 @@ import (
 	"github.com/todocoder/go-stream/utils"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -575,6 +576,22 @@ func (s Stream[T]) Reduce(accumulator func(T, T) T) Optional[T] {
 		return Optional[T]{v: nil}
 	}
 	return Optional[T]{v: &res}
+}
+
+func (s Stream[T]) Joining(seq string) string {
+	// assert
+	var b strings.Builder
+	for item := range s.source {
+		if v, ok := any(item).(string); ok {
+			b.WriteString(v)
+			b.WriteString(seq)
+		}
+	}
+	fullContent := b.String()
+	if len(fullContent) < 1 {
+		return fullContent
+	}
+	return fullContent[:b.Len()-len(seq)]
 }
 
 func (s Stream[T]) Map(fn func(item T) any) Stream[any] {

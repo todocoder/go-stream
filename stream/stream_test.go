@@ -348,6 +348,49 @@ func TestReduce(t *testing.T) {
 	fmt.Println(res.Get())
 }
 
+func TestJoining(t *testing.T) {
+	resE := Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+		TestItem{itemNum: 4, itemValue: "item4"},
+	).Joining("--")
+	fmt.Println(resE)
+	temp := make([]TestItem, 0)
+	resEmpty := Of(temp...).Joining("--")
+	fmt.Println(resEmpty)
+
+	resR := Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+		TestItem{itemNum: 4, itemValue: "item4"},
+	).MapToString(func(a TestItem) string {
+		return a.itemValue
+	}).Joining("-")
+	fmt.Println(resR)
+
+	resRSeqE := Of(
+		TestItem{itemNum: 1, itemValue: "item1"},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+		TestItem{itemNum: 4, itemValue: "item4"},
+	).MapToString(func(a TestItem) string {
+		return a.itemValue
+	}).Joining("")
+	fmt.Println(resRSeqE)
+
+	resRE := Of(
+		TestItem{itemNum: 1},
+		TestItem{itemNum: 2, itemValue: "item2"},
+		TestItem{itemNum: 3, itemValue: "item3"},
+		TestItem{itemNum: 4, itemValue: "item4"},
+	).MapToString(func(a TestItem) string {
+		return a.itemValue
+	}).Joining("-")
+	fmt.Println(resRE)
+}
+
 func TestToSlice(t *testing.T) {
 	res := Of(
 		TestItem{itemNum: 1, itemValue: "item1"},
